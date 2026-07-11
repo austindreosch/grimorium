@@ -112,3 +112,39 @@ export function getGameSummaries(): GameSummary[] {
     })
     .sort((a, b) => b.createdAt - a.createdAt)
 }
+
+// ============================================================================
+// BOARD POSITIONS
+// ============================================================================
+// Cosmetic per-game token offsets for the Grimoire Board. Never written to
+// game.history — this is purely a local layout preference.
+
+const BOARD_POSITIONS_KEY = 'grimoire_board_positions'
+
+export type BoardPosition = { x: number; y: number }
+
+function getAllBoardPositions(): Record<string, Record<string, BoardPosition>> {
+  const data = localStorage.getItem(BOARD_POSITIONS_KEY)
+  if (!data) return {}
+
+  try {
+    return JSON.parse(data) as Record<string, Record<string, BoardPosition>>
+  } catch {
+    return {}
+  }
+}
+
+export function getBoardPositions(
+  gameId: string,
+): Record<string, BoardPosition> {
+  return getAllBoardPositions()[gameId] ?? {}
+}
+
+export function setBoardPositions(
+  gameId: string,
+  positions: Record<string, BoardPosition>,
+): void {
+  const all = getAllBoardPositions()
+  all[gameId] = positions
+  localStorage.setItem(BOARD_POSITIONS_KEY, JSON.stringify(all))
+}
