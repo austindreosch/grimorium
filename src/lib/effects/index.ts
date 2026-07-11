@@ -1,0 +1,104 @@
+import { EffectDefinition, EffectId, EffectType } from './types'
+import type { EffectInstance } from '../types'
+import type { TeamId } from '../teams'
+import Dead from './definition/dead'
+import UsedDeadVote from './definition/used-dead-vote'
+import Safe from './definition/safe'
+import RedHerring from './definition/red-herring'
+import Pure from './definition/pure'
+import SlayerBullet from './definition/slayer-bullet'
+import Deflect from './definition/deflect'
+import Martyrdom from './definition/martyrdom'
+import DemonSuccessor from './definition/demon-successor'
+import Misregister from './definition/misregister'
+import PendingRoleReveal from './definition/pending-role-reveal'
+import Poisoned from './definition/poisoned'
+import Drunk from './definition/drunk'
+import ButlerMaster from './definition/butler-master'
+import ImpStarpassPending from './definition/imp-starpass-pending'
+
+export const EFFECTS: Record<EffectId, EffectDefinition> = {
+  dead: Dead,
+  used_dead_vote: UsedDeadVote,
+  safe: Safe,
+  red_herring: RedHerring,
+  pure: Pure,
+  slayer_bullet: SlayerBullet,
+  deflect: Deflect,
+  martyrdom: Martyrdom,
+  demon_successor: DemonSuccessor,
+  misregister: Misregister,
+  pending_role_reveal: PendingRoleReveal,
+  poisoned: Poisoned,
+  drunk: Drunk,
+  butler_master: ButlerMaster,
+  imp_starpass_pending: ImpStarpassPending,
+}
+
+export function getEffect(effectId: string): EffectDefinition | undefined {
+  return EFFECTS[effectId as EffectId]
+}
+
+export function getAllEffects(): EffectDefinition[] {
+  return Object.values(EFFECTS)
+}
+
+/**
+ * Check if a player's ability is malfunctioning due to effects
+ * like Poisoned or Drunk. Uses the `poisonsAbility` flag on effect definitions.
+ */
+export function isMalfunctioning(player: {
+  effects: Array<{ type: string }>
+}): boolean {
+  return player.effects.some((e) => {
+    const def = EFFECTS[e.type as EffectId]
+    return def?.poisonsAbility === true
+  })
+}
+
+/**
+ * Resolves the semantic type of an effect instance for badge styling.
+ * Same effect can have different types (e.g. safe from Soldier vs Monk).
+ */
+export function getEffectType(
+  instance: EffectInstance,
+  def?: EffectDefinition | null,
+): EffectType {
+  if (!def) return 'marker'
+  if (def.getType) return def.getType(instance)
+  return def.defaultType ?? 'marker'
+}
+
+/**
+ * Resolve canRegisterAs for a specific effect instance.
+ * Instance data takes precedence over the definition value. This allows
+ * a single generic effect (e.g., `misregister`) to be configured differently
+ * for different roles (Recluse vs Spy).
+ */
+export function resolveCanRegisterAs(
+  instance: EffectInstance,
+  def?: EffectDefinition | null,
+): { teams?: TeamId[]; alignments?: ('good' | 'evil')[] } | undefined {
+  // Instance data takes precedence
+  const instanceData = instance.data?.canRegisterAs as
+    | { teams?: TeamId[]; alignments?: ('good' | 'evil')[] }
+    | undefined
+  if (instanceData) return instanceData
+  // Fall back to definition
+  return def?.canRegisterAs
+}
+
+/** Badge variant for each effect type (for Badge component). */
+export const EFFECT_TYPE_BADGE_VARIANT: Record<
+  EffectType,
+  `effect_${EffectType}`
+> = {
+  buff: 'effect_buff',
+  nerf: 'effect_nerf',
+  marker: 'effect_marker',
+  passive: 'effect_passive',
+  perception: 'effect_perception',
+  pending: 'effect_pending',
+}
+
+export * from './types'
