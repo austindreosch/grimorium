@@ -1152,3 +1152,85 @@ export function removeEffectFromPlayer(
     { [playerId]: [effectType] },
   )
 }
+
+/**
+ * Remove a single effect instance by its id (narrator action). Unlike
+ * `removeEffectFromPlayer` (which removes every effect of a type), this targets
+ * one instance — needed for reminder markers, which all share type `reminder`.
+ */
+export function removeEffectInstance(
+  game: Game,
+  playerId: string,
+  instanceId: string,
+): Game {
+  const state = getCurrentState(game)
+  const player = state.players.find((p) => p.id === playerId)
+  const inst = player?.effects.find((e) => e.id === instanceId)
+  if (!inst) return game
+
+  const players = state.players.map((p) =>
+    p.id === playerId
+      ? { ...p, effects: p.effects.filter((e) => e.id !== instanceId) }
+      : p,
+  )
+
+  return addHistoryEntry(
+    game,
+    {
+      type: 'effect_removed',
+      message: [
+        {
+          type: 'i18n',
+          key: 'history.effectRemoved',
+          params: { player: playerId, effect: inst.type },
+        },
+      ],
+      data: { playerId, effectType: inst.type, instanceId, source: 'narrator' },
+    },
+    { players },
+  )
+}
+
+/**
+ * Move a single effect instance from one player to another, atomically and in
+ * one history entry (narrator board action). Instance-precise so moving one
+ * reminder marker doesn't disturb the player's other markers, and atomic so the
+ * remove and add can't clobber each other via a stale snapshot.
+ */
+export function moveEffectInstance(
+  game: Game,
+  fromId: string,
+  toId: string,
+  instanceId: string,
+): Game {
+  const state = getCurrentState(game)
+  const from = state.players.find((p) => p.id === fromId)
+  const inst = from?.effects.find((e) => e.id === instanceId)
+  if (!inst) return game
+
+  const players = state.players.map((p) => {
+    if (p.id === fromId) {
+      return { ...p, effects: p.effects.filter((e) => e.id !== instanceId) }
+    }
+    if (p.id === toId) {
+      return { ...p, effects: [...p.effects, { ...inst, id: generateId() }] }
+    }
+    return p
+  })
+
+  return addHistoryEntry(
+    game,
+    {
+      type: 'effect_added',
+      message: [
+        {
+          type: 'i18n',
+          key: 'history.effectAdded',
+          params: { player: toId, effect: inst.type },
+        },
+      ],
+      data: { fromId, toId, effectType: inst.type, source: 'narrator', action: 'move' },
+    },
+    { players },
+  )
+}

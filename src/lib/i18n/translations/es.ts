@@ -270,6 +270,20 @@ const es: Translations = {
     // Groups
     otherPlayers: 'Otros Jugadores',
     currentPlayer: 'Jugador actual',
+
+    // Grimoire board
+    board: {
+      title: 'Grimorio',
+      characterReminders: 'Recordatorios del personaje',
+      allTokens: 'Todas las fichas',
+      search: 'Buscar fichas…',
+      markDead: 'Marcar muerto',
+      revive: 'Revivir',
+      demonBluffs: 'Faroles del Demonio',
+      dragHint: 'Arrastra sobre un jugador · suelta en el centro para quitar',
+      noReminders: 'Sin fichas',
+      open: 'Grimorio',
+    },
   },
 
   teams: {

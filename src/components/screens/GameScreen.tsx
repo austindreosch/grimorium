@@ -19,6 +19,8 @@ import {
   checkEndOfDayWinConditions,
   addEffectToPlayer,
   removeEffectFromPlayer,
+  removeEffectInstance,
+  moveEffectInstance,
   updateEffectData,
   processAutoSkips,
   applySetupAction,
@@ -47,6 +49,7 @@ import { useI18n } from '../../lib/i18n'
 import { RoleRevelationScreen } from './RoleRevelationScreen'
 import { NightDashboard } from './NightDashboard'
 import { DayPhase } from './DayPhase'
+import { GrimoireBoard } from './GrimoireBoard'
 import { NominationScreen } from './NominationScreen'
 import { VotingPhase } from './VotingPhase'
 import { GameOver } from './GameOver'
@@ -83,6 +86,7 @@ type Screen =
   | { type: 'game_over' }
   | { type: 'death_reveal'; deaths: DeathRevealEntry[]; next: Screen }
   | { type: 'grimoire_role_card'; playerId: string; returnTo: Screen }
+  | { type: 'grimoire_board'; returnTo: Screen }
 
 export function GameScreen({ initialGame, onMainMenu }: Props) {
   const { t } = useI18n()
@@ -528,6 +532,47 @@ export function GameScreen({ initialGame, onMainMenu }: Props) {
     updateGame(newGame)
   }
 
+  // Board life/death toggle. Killing routes a `kill` intent through the
+  // pipeline (so Scarlet Woman succession, protection, and win-detection all
+  // fire); reviving is a narrator correction, so it removes `dead` directly.
+  const handleToggleDeath = (playerId: string) => {
+    const player = getPlayer(state, playerId)
+    if (!player) return
+
+    if (!isAlive(player)) {
+      updateGame(removeEffectFromPlayer(game, playerId, 'dead'))
+      return
+    }
+
+    const boardScreen = screen
+    const intent = {
+      type: 'kill' as const,
+      sourceId: 'storyteller',
+      targetId: playerId,
+      cause: 'storyteller',
+    }
+    const pipelineResult = resolveIntent(intent, state, game)
+    processPipelineResult(pipelineResult, game, (updatedGame) => {
+      const winner = checkWinCondition(getCurrentState(updatedGame), updatedGame)
+      if (winner) {
+        updateGame(endGame(updatedGame, winner))
+        setScreen({ type: 'game_over' })
+      } else {
+        // Return to the board even if a deflect/protection UI detour happened.
+        setScreen(boardScreen)
+      }
+    })
+  }
+
+  // Board pip drag: move one instance atomically, or remove one instance.
+  const handleMovePip = (fromId: string, toId: string, instanceId: string) => {
+    updateGame(moveEffectInstance(game, fromId, toId, instanceId))
+  }
+
+  const handleRemovePip = (playerId: string, instanceId: string) => {
+    updateGame(removeEffectInstance(game, playerId, instanceId))
+  }
+
   const handleShowRoleCard = (player: PlayerState) => {
     setShowGrimoire(false)
     setScreen({
@@ -755,6 +800,19 @@ export function GameScreen({ initialGame, onMainMenu }: Props) {
         )
       }
 
+      case 'grimoire_board':
+        return (
+          <GrimoireBoard
+            game={game}
+            state={state}
+            onAddEffect={handleAddEffect}
+            onMovePip={handleMovePip}
+            onRemovePip={handleRemovePip}
+            onToggleDeath={handleToggleDeath}
+            onBack={() => setScreen(screen.returnTo)}
+          />
+        )
+
       case 'nomination':
         return (
           <NominationScreen
@@ -798,6 +856,7 @@ export function GameScreen({ initialGame, onMainMenu }: Props) {
   const showFloatingButtons =
     screen.type !== 'game_over' &&
     screen.type !== 'grimoire_role_card' &&
+    screen.type !== 'grimoire_board' &&
     !isPlayerFacing
 
   return (
@@ -807,13 +866,23 @@ export function GameScreen({ initialGame, onMainMenu }: Props) {
       </PlayerFacingContext.Provider>
 
       {/* Floating Language Toggle */}
-      <div className='fixed top-4 right-4 z-50'>
-        <LanguagePicker variant='floating' />
-      </div>
+      {screen.type !== 'grimoire_board' && (
+        <div className='fixed top-4 right-4 z-50'>
+          <LanguagePicker variant='floating' />
+        </div>
+      )}
 
       {/* Floating Action Buttons */}
       {showFloatingButtons && (
         <div className='fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 flex flex-col gap-2'>
+          <button
+            onClick={() => setScreen({ type: 'grimoire_board', returnTo: screen })}
+            className='w-12 h-12 rounded-full bg-board-ink/90 border border-board-gold/40 text-board-gold flex items-center justify-center shadow-lg hover:border-board-gold/70 transition-colors'
+            title={t.game.board.open}
+          >
+            <Icon name='layoutGrid' size='md' />
+          </button>
+
           <button
             onClick={() => {
               setGrimoireIntent({ view: 'list' })

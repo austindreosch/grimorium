@@ -270,6 +270,20 @@ export type Translations = {
     // Groups
     otherPlayers: string
     currentPlayer: string
+
+    // Grimoire board
+    board: {
+      title: string
+      characterReminders: string
+      allTokens: string
+      search: string
+      markDead: string
+      revive: string
+      demonBluffs: string
+      dragHint: string
+      noReminders: string
+      open: string
+    }
   }
 
   // Teams

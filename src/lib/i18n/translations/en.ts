@@ -268,6 +268,20 @@ const en: Translations = {
     // Groups
     otherPlayers: 'Other Players',
     currentPlayer: 'Current player',
+
+    // Grimoire board
+    board: {
+      title: 'Grimoire',
+      characterReminders: 'Character reminders',
+      allTokens: 'All tokens',
+      search: 'Search tokens…',
+      markDead: 'Mark dead',
+      revive: 'Revive',
+      demonBluffs: 'Demon bluffs',
+      dragHint: 'Drag onto a player · drop in the centre to remove',
+      noReminders: 'No tokens',
+      open: 'Board',
+    },
   },
 
   teams: {
