@@ -31,8 +31,9 @@ type TeamMember = {
  * Shared component for first-night evil team revelation.
  *
  * - When viewerType is "demon": Shows minion players (name only, no role).
- * - When viewerType is "minion": Shows other minions (name only) and demons
- *   (name + role name, since minions learn the Demon's identity).
+ * - When viewerType is "minion": Shows other minions and the Demon by player
+ *   name + team label only. Minions learn *who* their Demon is, never the
+ *   Demon's character — on multi-Demon scripts the character stays hidden.
  */
 export function EvilTeamReveal({
   state,
@@ -58,7 +59,7 @@ export function EvilTeamReveal({
       } else if (role.team === 'demon') {
         members.push({
           player: p,
-          showRole: viewerType === 'minion', // Minions learn the Demon role
+          showRole: false, // Minions learn who the Demon is, not their character
           teamLabel: t.teams.demon.name,
         })
       }

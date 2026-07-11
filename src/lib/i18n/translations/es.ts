@@ -200,7 +200,7 @@ const es: Translations = {
     // Malfunction Config
     stepConfigureMalfunction: 'Configurar Mal Funcionamiento',
     playerIsMalfunctioning:
-      'Este jugador está envenenado o borracho, por lo que su habilidad da información falsa. Como Cuentacuentos, debes seleccionar la información falsa que recibirá.',
+      'Este jugador está envenenado o borracho, por lo que su habilidad falla. Como Cuentacuentos, elige el resultado que quieras: puede ser verdadero o falso, lo que convenga a la partida.',
     chooseFalseNumber: '¿Qué número debería ver?',
     chooseFalseResult: '¿Qué resultado debería ver?',
     chooseFalseTarget: '¿A qué jugador le dirán que es el rol?',
@@ -416,7 +416,7 @@ const es: Translations = {
     p2_night3: 'Para los **roles de información**: la app autocalcula la información correcta, considerando envenenamientos o ebriedad.',
     p2_night4: 'Para los **roles de acción**: selecciona objetivos a través de una lista intuitiva.',
     p2_night5: 'La aplicación maneja todos los tiempos, efectos de estado y caducidades automáticamente.',
-    p2_nightTip: 'Si un rol tiene un **mal funcionamiento**, la aplicación te pedirá que proporciones información falsa.',
+    p2_nightTip: 'Si un rol tiene un **mal funcionamiento**, la aplicación te pedirá que elijas la información que recibe: verdadera o falsa, tú decides.',
     p2_dayTitle: 'Fase de Día y Amanecer',
     p2_day1: '**Amanecer:** La aplicación anuncia las muertes de la noche.',
     p2_day2: '**Fase de Día:** Los jugadores discuten.',

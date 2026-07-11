@@ -16,7 +16,7 @@ type PlayerItem = {
 }
 
 const MIN_PLAYERS = 5
-const MAX_PLAYERS = 20
+const MAX_PLAYERS = 15
 
 let _nextId = 0
 function makePlayerItem(name: string): PlayerItem {

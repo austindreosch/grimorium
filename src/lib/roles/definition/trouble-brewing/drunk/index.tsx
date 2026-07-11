@@ -41,8 +41,13 @@ function DrunkSetupAction({ player, state, onComplete }: SetupActionProps) {
   const roleT = getRoleTranslations('drunk', language)
   const [selectedRole, setSelectedRole] = useState<string | null>(null)
 
-  // Get all Townsfolk roles for the narrator to choose from
-  const townsfolkRoles = getAllRoles().filter((r) => r.team === 'townsfolk')
+  // Get all Townsfolk roles for the narrator to choose from.
+  // Exclude roles already in play — one token per character, so the Drunk
+  // must believe they are a Townsfolk that is NOT otherwise in the game. (GH#10)
+  const inPlayRoleIds = new Set(state.players.map((p) => p.roleId))
+  const townsfolkRoles = getAllRoles().filter(
+    (r) => r.team === 'townsfolk' && !inPlayRoleIds.has(r.id),
+  )
 
   const handleSelect = (roleId: string) => {
     setSelectedRole((prev) => (prev === roleId ? null : roleId))

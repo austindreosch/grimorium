@@ -1,17 +1,36 @@
 import { useState } from 'react'
 import { isAlive } from '../../lib/types'
-import { getRole } from '../../lib/roles'
 import { isMalfunctioning } from '../../lib/effects'
-import { useI18n } from '../../lib/i18n'
+import { useI18n, getRoleName } from '../../lib/i18n'
 import { DayActionProps } from '../../lib/pipeline/types'
+// Import perception helpers from the perception module directly, NOT the
+// pipeline barrel. This component is pulled into the effects module graph
+// (via the slayer_bullet effect), and importing the heavy pipeline/index
+// barrel there creates an effects↔pipeline import cycle that breaks module
+// mocking in tests.
+import {
+  perceive,
+  getAmbiguousPlayers,
+  applyPerceptionOverrides,
+} from '../../lib/pipeline/perception'
+import { Perception } from '../../lib/pipeline/types'
 import { Button, Icon, BackButton } from '../atoms'
-import { MysticDivider } from '../items'
+import { MysticDivider, PerceptionConfigStep } from '../items'
 import { PlayerPickerList } from '../inputs'
 import { ScreenFooter } from '../layouts/ScreenFooter'
 
 /**
  * Day action component for the Slayer's ability.
- * The Slayer picks a target to shoot. If the target is the Demon, they die.
+ *
+ * The Slayer picks a target to shoot. If the target *registers* as the Demon,
+ * they die. The kill is routed through the pipeline as a `kill` intent so that
+ * effects like Scarlet Woman succession trigger correctly (previously the
+ * Slayer applied `dead` directly, letting a Slayer+SW game end in an instant,
+ * incorrect Good win).
+ *
+ * Registration goes through `perceive()`, so a Recluse the narrator decides
+ * registers as the Demon can be killed by a Slayer shot (GH#13). When the
+ * target is ambiguous (Recluse/Spy), a narrator perception step is shown first.
  */
 export function SlayerActionScreen({
   state,
@@ -19,23 +38,32 @@ export function SlayerActionScreen({
   onComplete,
   onBack,
 }: DayActionProps) {
-  const { t } = useI18n()
+  const { t, language } = useI18n()
+  const [phase, setPhase] = useState<'select' | 'configure'>('select')
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null)
 
   const slayer = state.players.find((p) => p.id === playerId)
   const alivePlayers = state.players.filter((p) => isAlive(p))
+  const malfunctioning = slayer ? isMalfunctioning(slayer) : true
 
-  const handleConfirm = () => {
+  const target = state.players.find((p) => p.id === selectedTarget)
+  // A malfunctioning Slayer always misses, so no perception step is needed.
+  const ambiguousTargets =
+    !malfunctioning && target ? getAmbiguousPlayers([target], 'team') : []
+
+  const resolve = (overrides: Record<string, Partial<Perception>>) => {
     if (!selectedTarget || !slayer) return
 
-    const target = state.players.find((p) => p.id === selectedTarget)
-    if (!target) return
+    const effState = applyPerceptionOverrides(state, overrides)
+    const effTarget = effState.players.find((p) => p.id === selectedTarget)
+    const effSlayer = effState.players.find((p) => p.id === playerId) ?? slayer
+    if (!effTarget) return
 
-    const targetRole = getRole(target.roleId)
-    // When malfunctioning, the shot always misses
-    const isDemon = !isMalfunctioning(slayer) && targetRole?.team === 'demon'
+    const registersDemon =
+      !malfunctioning &&
+      perceive(effTarget, effSlayer, 'team', effState).team === 'demon'
 
-    if (isDemon) {
+    if (registersDemon) {
       onComplete({
         entries: [
           {
@@ -44,23 +72,20 @@ export function SlayerActionScreen({
               {
                 type: 'i18n',
                 key: 'roles.slayer.history.killedDemon',
-                params: {
-                  slayer: playerId,
-                  target: selectedTarget,
-                },
+                params: { slayer: playerId, target: selectedTarget },
               },
             ],
-            data: {
-              slayerId: playerId,
-              targetId: selectedTarget,
-              hit: true,
-            },
+            data: { slayerId: playerId, targetId: selectedTarget, hit: true },
           },
         ],
-        addEffects: {
-          [selectedTarget]: [{ type: 'dead', expiresAt: 'never' }],
-        },
         removeEffects: { [playerId]: ['slayer_bullet'] },
+        // Route the kill through the pipeline (Scarlet Woman succession, etc.)
+        intent: {
+          type: 'kill',
+          sourceId: playerId,
+          targetId: selectedTarget,
+          cause: 'slayer',
+        },
       })
     } else {
       onComplete({
@@ -71,23 +96,44 @@ export function SlayerActionScreen({
               {
                 type: 'i18n',
                 key: 'roles.slayer.history.missed',
-                params: {
-                  slayer: playerId,
-                  target: selectedTarget,
-                },
+                params: { slayer: playerId, target: selectedTarget },
               },
             ],
             data: {
               slayerId: playerId,
               targetId: selectedTarget,
               hit: false,
-              ...(isMalfunctioning(slayer) ? { malfunctioned: true } : {}),
+              ...(malfunctioning ? { malfunctioned: true } : {}),
             },
           },
         ],
         removeEffects: { [playerId]: ['slayer_bullet'] },
       })
     }
+  }
+
+  const handleConfirm = () => {
+    if (!selectedTarget || !slayer) return
+    // Ambiguous target (Recluse/Spy) → let the narrator decide registration.
+    if (ambiguousTargets.length > 0) {
+      setPhase('configure')
+      return
+    }
+    resolve({})
+  }
+
+  if (phase === 'configure') {
+    return (
+      <PerceptionConfigStep
+        ambiguousPlayers={ambiguousTargets}
+        context='team'
+        state={state}
+        roleIcon='crosshair'
+        roleName={getRoleName('slayer', language)}
+        playerName={slayer?.name ?? ''}
+        onComplete={(overrides) => resolve(overrides)}
+      />
+    )
   }
 
   return (

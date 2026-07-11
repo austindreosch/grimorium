@@ -198,7 +198,7 @@ const en: Translations = {
     // Malfunction Config
     stepConfigureMalfunction: 'Configure Malfunction',
     playerIsMalfunctioning:
-      'This player is poisoned or drunk, so their ability yields false information. As the Storyteller, you must select the false information they will receive.',
+      'This player is poisoned or drunk, so their ability malfunctions. As the Storyteller, choose whatever result you like — it may be true or false, whichever suits the game.',
     chooseFalseNumber: 'What number should they see?',
     chooseFalseResult: 'What result should they see?',
     chooseFalseTarget: 'Which player should they be told is the role?',
@@ -414,7 +414,7 @@ const en: Translations = {
     p2_night3: 'For **information roles**: the app auto-calculates the correct information, accounting for poisoning and drunkenness.',
     p2_night4: 'For **action roles**: select targets via an intuitive player list.',
     p2_night5: 'The app handles all timing, status effects, and expiration automatically.',
-    p2_nightTip: 'If a role is **malfunctioning**, the app prompts you to provide false information.',
+    p2_nightTip: 'If a role is **malfunctioning**, the app prompts you to choose the information they receive — true or false, your call.',
     p2_dayTitle: 'Dawn & Day Phase',
     p2_day1: '**Dawn:** The app announces overnight deaths.',
     p2_day2: '**Day Phase:** Players discuss.',
@@ -464,7 +464,7 @@ const en: Translations = {
     p4_pitfallsTitle: 'Common Pitfalls',
     p4_pitfalls1: '❌ Don\'t show your screen to players unless it\'s their role reveal or you\'re deliberately showing them information.',
     p4_pitfalls2: '❌ Don\'t forget that dead players get one final vote — the app tracks this, but remind players.',
-    p4_pitfalls3: '❌ Don\'t stress about misinformation from malfunctioning roles — the app will prompt you to provide false info.',
+    p4_pitfalls3: '❌ Don\'t stress about malfunctioning roles — the app prompts you to choose the info they receive (it can be true or false).',
     p4_pitfalls4: '✅ Use the "Skip" option when a role doesn\'t need to act (the app supports this).',
   }
 }

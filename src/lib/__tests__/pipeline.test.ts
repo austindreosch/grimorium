@@ -237,6 +237,45 @@ describe('handler behavior', () => {
 // STATE CHANGES MERGING
 // ============================================================================
 
+describe('Slayer kill routing → Scarlet Woman succession', () => {
+  it('a slayer-cause kill on the Demon promotes the Scarlet Woman (not an instant good win)', () => {
+    // Regression: the Slayer used to apply `dead` directly, bypassing the
+    // pipeline, so SW succession never fired and Slayer+SW ended in a wrong
+    // Good win. Routing through a kill intent fixes it.
+    const imp = makePlayer({ id: 'imp', roleId: 'imp' })
+    let sw = makePlayer({ id: 'sw', roleId: 'scarlet_woman' })
+    sw = addEffectTo(sw, 'demon_successor')
+    const others = Array.from({ length: 3 }, (_, i) =>
+      makePlayer({ id: `p${i}`, roleId: 'villager' }),
+    )
+    const state = makeState({
+      phase: 'day',
+      round: 2,
+      players: [imp, sw, ...others],
+    }) // 5 alive
+    const game = makeGame(state)
+
+    const intent: KillIntent = {
+      type: 'kill',
+      sourceId: 'slayer',
+      targetId: 'imp',
+      cause: 'slayer',
+    }
+    const result = resolveIntent(intent, state, game)
+    expect(result.type).toBe('resolved')
+    if (result.type !== 'resolved') return
+
+    const finalState = getCurrentState(
+      applyPipelineChanges(game, result.stateChanges),
+    )
+    // Imp dies, and the Scarlet Woman inherits the Demon role.
+    expect(hasEffect(finalState.players.find((p) => p.id === 'imp')!, 'dead')).toBe(
+      true,
+    )
+    expect(finalState.players.find((p) => p.id === 'sw')!.roleId).toBe('imp')
+  })
+})
+
 describe('mergeStateChanges', () => {
   it('merges entries from both sources', () => {
     const a: StateChanges = {

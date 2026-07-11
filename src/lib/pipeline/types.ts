@@ -110,6 +110,10 @@ export type DayActionResult = {
   entries: Omit<HistoryEntry, 'id' | 'timestamp' | 'stateAfter'>[]
   addEffects?: Record<string, EffectToAdd[]>
   removeEffects?: Record<string, string[]>
+  // Optional intent routed through the pipeline (e.g., the Slayer's kill), so
+  // effects like Scarlet Woman succession can intercept. Direct entries/effects
+  // above are applied first (the action's own bookkeeping), then the intent.
+  intent?: Intent
 }
 
 export type DayActionDefinition = {

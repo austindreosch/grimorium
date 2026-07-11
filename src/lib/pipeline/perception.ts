@@ -1,6 +1,6 @@
 import { GameState, PlayerState, EffectInstance } from '../types'
 import { getRole } from '../roles/index'
-import { getEffect, resolveCanRegisterAs } from '../effects'
+import { getEffect, resolveCanRegisterAs, isMalfunctioning } from '../effects'
 import { isEvilTeam, TeamId } from '../teams'
 import { Perception, PerceptionContext } from './types'
 
@@ -34,10 +34,18 @@ export function perceive(
     alignment: isEvilTeam(team) ? 'evil' : 'good',
   }
 
+  // A malfunctioning (poisoned/drunk) player's misregistration ability does not
+  // work — they register truthfully. Skip perception modifiers from effects that
+  // declare `canRegisterAs` (Recluse/Spy). Unconditional modifiers (e.g. the Drunk
+  // always registering as Drunk/Outsider — no `canRegisterAs`) still apply.
+  const malfunctioning = isMalfunctioning(targetPlayer)
+
   // Collect and apply perception modifiers from the target's effects
   for (const effectInstance of targetPlayer.effects) {
     const effectDef = getEffect(effectInstance.type)
     if (!effectDef?.perceptionModifiers) continue
+
+    if (malfunctioning && resolveCanRegisterAs(effectInstance, effectDef)) continue
 
     for (const modifier of effectDef.perceptionModifiers) {
       // Check if this modifier applies to the current context
@@ -77,6 +85,8 @@ export function perceive(
  * `perceive()` for that. This only checks static declarations on effects.
  */
 export function canRegisterAsTeam(player: PlayerState, team: TeamId): boolean {
+  // Malfunctioning players register truthfully — no misregistration.
+  if (isMalfunctioning(player)) return false
   for (const effectInstance of player.effects) {
     const effectDef = getEffect(effectInstance.type)
     const canRegisterAs = resolveCanRegisterAs(effectInstance, effectDef)
@@ -98,6 +108,8 @@ export function canRegisterAsAlignment(
   player: PlayerState,
   alignment: 'good' | 'evil',
 ): boolean {
+  // Malfunctioning players register truthfully — no misregistration.
+  if (isMalfunctioning(player)) return false
   for (const effectInstance of player.effects) {
     const effectDef = getEffect(effectInstance.type)
     const canRegisterAs = resolveCanRegisterAs(effectInstance, effectDef)
@@ -123,6 +135,9 @@ export function getAmbiguousPlayers(
   context: PerceptionContext,
 ): PlayerState[] {
   return players.filter((player) => {
+    // Malfunctioning players register truthfully — never ambiguous, so no
+    // narrator perception-config step is offered for them.
+    if (isMalfunctioning(player)) return false
     for (const effectInstance of player.effects) {
       const effectDef = getEffect(effectInstance.type)
       const canRegisterAs = resolveCanRegisterAs(effectInstance, effectDef)

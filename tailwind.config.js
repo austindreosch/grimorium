@@ -9,8 +9,15 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        tarot: ['"Cinzel"', 'serif'],
-        body: ['"Inter"', 'sans-serif'],
+        // Display / token names / headers — the Blood on the Clocktower face.
+        tarot: ['"Dumbledor"', '"Cinzel"', 'serif'],
+        token: ['"Dumbledor"', '"Cinzel"', 'serif'],
+        // Old-print flavour text.
+        flavor: ['"IM Fell English"', 'Georgia', 'serif'],
+        // Reading body copy.
+        read: ['"EB Garamond"', 'Georgia', 'serif'],
+        // Functional UI (labels, buttons, badges).
+        body: ['"Eudoxus Sans"', 'system-ui', 'sans-serif'],
       },
       letterSpacing: {
         'widest-xl': '0.2em',
@@ -39,6 +46,20 @@ export default {
           darker: '#080808',
           purple: '#1A0A2E',
           blood: '#2D0A0A',
+        },
+        // Real-board palette — black-leather grimoire + aged-parchment tokens,
+        // official good/evil ink. Introduced by the token components and the
+        // screen restyle sweep; existing grimoire/mystic tokens stay until then.
+        board: {
+          leather: '#0D0B08', // deep warm black — the grimoire book
+          wood: '#171009',
+          ink: '#241C11', // mottled token edge / raised panel
+          shroud: '#26262B', // dead-player shroud tone
+          good: '#2F5C8F', // townsfolk blue ink
+          goodSoft: '#5E8CBA', // outsider lighter blue
+          evil: '#8A2222', // demon red ink
+          evilSoft: '#B84A2C', // minion orange-red
+          gold: '#C9A24B', // aged gilt accent
         },
       },
       backgroundImage: {

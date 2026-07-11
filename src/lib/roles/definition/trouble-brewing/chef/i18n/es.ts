@@ -14,6 +14,11 @@ const es = {
   evilPairsExplanation:
     'Este es el número de parejas de jugadores malvados que están sentados uno al lado del otro.',
 
+  // Per-pair perception config
+  pairPerceptionHint:
+    'Un Ermitaño o Espía puede registrarse de forma diferente en cada pareja en la que se sienta. Decide cómo se registra cada uno junto a cada vecino.',
+  pairRegistersLabel: '¿Cómo se registra {player} junto a {neighbor}?',
+
   // History
   history: {
     sawEvilPairs:

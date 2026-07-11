@@ -473,8 +473,8 @@ type EffectDefinition = {
 | `safe` | Soldier (permanent), Monk (nightly) | Protection from death | `handlers`: prevents kill intents |
 | `red_herring` | Fortune Teller | False positive for FT checks | No handlers (checked directly by FT) |
 | `pure` | Virgin | Townsfolk nominators get executed | `handlers`: intercepts nominations |
-| `slayer_bullet` | Slayer | One-shot day kill | `dayActions`: SlayerActionScreen |
-| `bounce` | Mayor | Redirects kills to another player | `handlers`: requests UI, redirects kill |
+| `slayer_bullet` | Slayer | One-shot day kill (lazy-loaded screen; routes a `kill` intent through the pipeline so SW succession fires) | `dayActions`: SlayerActionScreen |
+| `deflect` | Mayor | Redirects kills to another player | `handlers`: requests UI, redirects kill |
 | `martyrdom` | Saint | Evil wins if executed | `winConditions`: after_execution |
 | `scarlet_woman` | Scarlet Woman | Becomes Demon when Demon dies | `handlers`: piggybacks role change + `pending_role_reveal` |
 | `recluse_misregister` | Recluse | Outsider that may register as evil | `perceptionModifiers`, `canRegisterAs: { teams: [minion, demon], alignments: [evil] }` |
@@ -1126,6 +1126,15 @@ screens/   → Full screens: GameScreen, RoleRevelationScreen, SetupActionsScree
 
 Icons are referenced by `IconName` string. The `Icon` component maps these to Lucide React icons. When adding new roles or effects, check if the needed icon exists in the `IconName` type. Add new Lucide icon mappings if needed.
 
+### Character Art & Design System
+
+The app renders roles as real Blood on the Clocktower **character tokens**, not Lucide icons.
+
+- **Art:** official token art (`400×400` webp, blue `_g` / red `_e` tints) lives in `public/assets/characters/{tb,generic}`. `src/lib/roles/art.ts` maps a role id → art URL (`getRoleArt(roleId, team)`), handling snake_case→file deltas (`fortune_teller`→`fortuneteller`) and generic team fallbacks for custom/unknown roles.
+- **Components:** `CharacterToken` (parchment disc + art + SVG curved name + shroud when dead) and `ReminderToken` (effect pip) in `components/items`. `PlayerRoleIcon` now delegates to `CharacterToken`, so real art appears everywhere player icons render.
+- **Fonts:** self-hosted in `public/assets/fonts`, declared `@font-face` in `src/index.css`. Tailwind families: `font-token`/`font-tarot` = Dumbledor (display), `font-flavor` = IM Fell English, `font-read` = EB Garamond, `font-body` = Eudoxus Sans (UI).
+- **Palette:** the `board.*` Tailwind tokens (leather/ink/good-blue/evil-red/gold) are the real-board colours; legacy `grimoire`/`mystic`/`parchment` tokens remain until each screen is swept onto the board palette.
+
 ---
 
 ## 13. Internationalization (i18n)
@@ -1431,14 +1440,18 @@ Tests run as a required step in the CI/CD pipeline (`.github/workflows/deploy.ym
 
 ### File Naming Conventions
 
-- Role definitions: PascalCase matching the role name (e.g., `FortuneTeller.tsx`)
-- Effect definitions: PascalCase matching the effect name (e.g., `SlayerBullet.ts`)
-- Roles with UI use `.tsx`; effects without UI use `.ts`
+- Role definitions live in a **kebab-case folder** with an `index.tsx` and an
+  `i18n/` subfolder: `src/lib/roles/definition/trouble-brewing/fortune-teller/index.tsx`
+  (NOT `FortuneTeller.tsx`). `villager` and `imp` sit at `definition/<role>/`.
+- Effect definitions follow the same shape: `effects/definition/<kebab>/index.ts`
+  (`.tsx` when they carry UI like a ConfigEditor).
+- Roles with UI use `.tsx`; logic-only effects use `.ts`
 - Components: PascalCase (e.g., `BounceRedirectUI.tsx`)
 
 ### Import Guidelines
 
 - Roles can import from: `../types`, `../../types`, `../../i18n`, `../index` (for `getRole`), `../../effects` (for `isMalfunctioning`), `../../pipeline` (for `perceive`, `getAmbiguousPlayers`, `applyPerceptionOverrides`), and UI components (including `NightStepListLayout`, `PerceptionConfigStep`, `MalfunctionConfigStep`)
 - Effects can import from: `../types`, `../../pipeline/types`, `../../types`, and UI components (for `request_ui`)
+- **Never let the effects module graph eagerly import `pipeline/perception` (or the `pipeline` barrel).** An effect that references a screen using `perceive()` (e.g. `slayer_bullet` → `SlayerActionScreen`) must `lazy(() => import(...))` that screen. Eagerly loading perception through the effects graph makes `perception.ts` bind to the real `getEffect` inside a test's `vi.mock('effects')` `importOriginal()`, silently breaking `getEffect` mocks across every perception-deception test.
 - Pipeline can import from: `../types`, `../effects`, `../roles/index`, `../teams`
 - `game.ts` can import from: `./types`, `./roles`, `./pipeline`, `./roles/types`

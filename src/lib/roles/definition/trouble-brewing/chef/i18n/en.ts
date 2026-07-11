@@ -14,6 +14,11 @@ const en = {
   evilPairsExplanation:
     'This is the number of pairs of evil players that are sitting next to each other.',
 
+  // Per-pair perception config
+  pairPerceptionHint:
+    'A Recluse or Spy may register differently in each pair they sit in. Decide how each registers beside each neighbour.',
+  pairRegistersLabel: 'How does {player} register beside {neighbor}?',
+
   // History
   history: {
     sawEvilPairs:

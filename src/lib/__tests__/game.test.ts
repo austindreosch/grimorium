@@ -8,9 +8,13 @@ import {
   applyNightAction,
   skipNightAction,
   nominate,
+  cancelNomination,
   resolveVote,
   addEffectToPlayer,
   removeEffectFromPlayer,
+  getNomineesToday,
+  getNominatorsToday,
+  getLastNightDeaths,
 } from '../game'
 import { getCurrentState, hasEffect, PlayerState } from '../types'
 import {
@@ -371,6 +375,84 @@ describe('nominate', () => {
 
     const updated = nominate(game, 'nonexistent', 'p5')
     expect(updated).toBe(game)
+  })
+})
+
+describe('cancelNomination', () => {
+  function makeDayGame(players: PlayerState[]) {
+    return makeGameWithHistory(
+      [
+        { type: 'game_created' },
+        { type: 'day_started', stateOverrides: { phase: 'day', round: 1 } },
+      ],
+      makeState({ phase: 'setup', round: 0, players }),
+    )
+  }
+
+  it('removes the nomination entry so nominator/nominee are no longer marked', () => {
+    const players = makeStandardPlayers()
+    const game = makeDayGame(players)
+
+    const nominated = nominate(game, 'p1', 'p5')
+    expect(getNominatorsToday(nominated).has('p1')).toBe(true)
+    expect(getNomineesToday(nominated).has('p5')).toBe(true)
+
+    const cancelled = cancelNomination(nominated)
+    expect(cancelled.history.some((e) => e.type === 'nomination')).toBe(false)
+    expect(getNominatorsToday(cancelled).has('p1')).toBe(false)
+    expect(getNomineesToday(cancelled).has('p5')).toBe(false)
+  })
+
+  it('is a no-op when there is no nomination to cancel', () => {
+    const game = makeDayGame(makeStandardPlayers())
+    expect(cancelNomination(game)).toBe(game)
+  })
+})
+
+describe('startDay night death announcement', () => {
+  it('announces any player who died during the night (Imp self-kill / redirect, no matching kill entry)', () => {
+    const imp = makePlayer({ id: 'imp', roleId: 'imp' })
+    const others = Array.from({ length: 4 }, (_, i) =>
+      makePlayer({ id: `p${i}`, roleId: 'villager' }),
+    )
+    // Night 2 in progress, everyone alive at night start.
+    const game = makeGameWithHistory(
+      [
+        { type: 'game_created' },
+        { type: 'night_started', stateOverrides: { phase: 'night', round: 2 } },
+      ],
+      makeState({ phase: 'setup', round: 0, players: [imp, ...others] }),
+    )
+
+    // The Imp dies during the night (e.g. self-kill starpass) — logged as
+    // "self_kill", not a "kill" with a targetId, so the old scan missed it.
+    const afterDeath = addEffectToPlayer(game, 'imp', 'dead')
+
+    const afterDawn = startDay(afterDeath)
+    expect(getLastNightDeaths(afterDawn)).toContain('imp')
+  })
+
+  it('does not announce a player protected during the night (never gained dead)', () => {
+    const imp = makePlayer({ id: 'imp', roleId: 'imp' })
+    const monkTarget = makePlayer({ id: 'safe', roleId: 'villager' })
+    const others = Array.from({ length: 3 }, (_, i) =>
+      makePlayer({ id: `p${i}`, roleId: 'villager' }),
+    )
+    const game = makeGameWithHistory(
+      [
+        { type: 'game_created' },
+        { type: 'night_started', stateOverrides: { phase: 'night', round: 2 } },
+      ],
+      makeState({
+        phase: 'setup',
+        round: 0,
+        players: [imp, monkTarget, ...others],
+      }),
+    )
+
+    // No one gained `dead` — protection held.
+    const afterDawn = startDay(game)
+    expect(getLastNightDeaths(afterDawn)).toEqual([])
   })
 })
 

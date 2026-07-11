@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, Suspense } from 'react'
 import { Game, getCurrentState, getPlayer, PlayerState } from '../../lib/types'
 import { getRole } from '../../lib/roles'
 import { getTeam } from '../../lib/teams'
@@ -11,6 +11,7 @@ import {
   applyNightAction,
   skipNightAction,
   nominate,
+  cancelNomination,
   resolveVote,
   executeAtEndOfDay,
   endGame,
@@ -415,6 +416,7 @@ export function GameScreen({ initialGame, onMainMenu }: Props) {
   }
 
   const handleCancelVote = () => {
+    updateGame(cancelNomination(game))
     setScreen({ type: 'day' })
   }
 
@@ -431,37 +433,47 @@ export function GameScreen({ initialGame, onMainMenu }: Props) {
   }
 
   const handleDayActionComplete = (result: DayActionResult) => {
+    // Apply the action's direct bookkeeping (log entry, effect removal) first.
     const changes = {
       entries: result.entries,
       addEffects: result.addEffects,
       removeEffects: result.removeEffects,
     }
-    const newGame = applyPipelineChanges(game, changes)
-    updateGame(newGame)
+    const afterDirect = applyPipelineChanges(game, changes)
+    updateGame(afterDirect)
 
-    const newState = getCurrentState(newGame)
-    const winner = checkWinCondition(newState, newGame)
-    if (winner) {
-      const finalGame = endGame(newGame, winner)
-      updateGame(finalGame)
-      setScreen({ type: 'game_over' })
-    } else {
-      // Check if action caused any deaths
-      const oldPlayerSet = new Set(state.players.filter(isAlive).map(p => p.id))
-      const newPlayerSet = new Set(newState.players.filter(isAlive).map(p => p.id))
-      const deaths = Array.from(oldPlayerSet).filter(id => !newPlayerSet.has(id))
+    // Players alive before any pipeline-driven death, for the death reveal.
+    const preIds = new Set(state.players.filter(isAlive).map((p) => p.id))
 
-      const nextScreen: Screen = { type: 'day' }
-
-      if (deaths.length > 0) {
-        const deadPlayers = deaths
-          .map((id) => newState.players.find((p) => p.id === id))
-          .filter(Boolean)
-          .map((p) => ({ playerId: p!.id, playerName: p!.name, roleId: p!.roleId }))
-        setScreen({ type: 'death_reveal', deaths: deadPlayers, next: nextScreen })
-      } else {
-        setScreen(nextScreen)
+    const finish = (finalGame: Game) => {
+      const finalState = getCurrentState(finalGame)
+      const winner = checkWinCondition(finalState, finalGame)
+      if (winner) {
+        updateGame(endGame(finalGame, winner))
+        setScreen({ type: 'game_over' })
+        return
       }
+      const deaths = finalState.players
+        .filter((p) => !isAlive(p) && preIds.has(p.id))
+        .map((p) => ({ playerId: p.id, playerName: p.name, roleId: p.roleId }))
+      if (deaths.length > 0) {
+        setScreen({ type: 'death_reveal', deaths, next: { type: 'day' } })
+      } else {
+        setScreen({ type: 'day' })
+      }
+    }
+
+    if (result.intent) {
+      // Route through the pipeline so effects (e.g. Scarlet Woman succession)
+      // can intercept the kill, and Deflect/etc. can request narrator UI.
+      const pipelineResult = resolveIntent(
+        result.intent,
+        getCurrentState(afterDirect),
+        afterDirect,
+      )
+      processPipelineResult(pipelineResult, afterDirect, finish)
+    } else {
+      finish(afterDirect)
     }
   }
 
@@ -704,12 +716,14 @@ export function GameScreen({ initialGame, onMainMenu }: Props) {
       case 'day_action': {
         const ActionComponent = screen.action.ActionComponent
         return (
-          <ActionComponent
-            state={state}
-            playerId={screen.action.playerId}
-            onComplete={handleDayActionComplete}
-            onBack={handleBackFromDayAction}
-          />
+          <Suspense fallback={null}>
+            <ActionComponent
+              state={state}
+              playerId={screen.action.playerId}
+              onComplete={handleDayActionComplete}
+              onBack={handleBackFromDayAction}
+            />
+          </Suspense>
         )
       }
 

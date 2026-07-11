@@ -376,34 +376,37 @@ export function startDay(game: Game): Game {
     data: {},
   })
 
-  // Find who died tonight
+  // Announce everyone who newly died during the night. Deriving deaths from the
+  // dead-effect diff (rather than scanning the killer's kill entry) is fully
+  // generic: it covers the Imp's self-kill starpass (logged as "self_kill", not
+  // "kill") and Deflect-redirected kills, whose victim differs from the original
+  // target. Both previously slipped through as "nobody died".
   const nightStartIndex = findLastEventIndex(updatedGame, 'night_started')
-  const deathEffects: string[] = []
+  const aliveAtNightStart = new Set(
+    nightStartIndex === -1
+      ? []
+      : updatedGame.history[nightStartIndex].stateAfter.players
+          .filter((p) => !hasEffect(p, 'dead'))
+          .map((p) => p.id),
+  )
 
-  for (let i = nightStartIndex + 1; i < updatedGame.history.length; i++) {
-    const entry = updatedGame.history[i]
-    if (entry.type === 'night_action' && entry.data.action === 'kill') {
-      deathEffects.push(entry.data.targetId as string)
-    }
-  }
-
-  // Announce deaths
   const currentState = getCurrentState(updatedGame)
-  for (const playerId of deathEffects) {
-    const player = currentState.players.find((p) => p.id === playerId)
-    if (player && hasEffect(player, 'dead')) {
-      updatedGame = addHistoryEntry(updatedGame, {
-        type: 'effect_added',
-        message: [
-          {
-            type: 'i18n',
-            key: 'history.diedInNight',
-            params: { player: player.id },
-          },
-        ],
-        data: { playerId: player.id, effectType: 'dead' },
-      })
-    }
+  const nightDeaths = currentState.players.filter(
+    (p) => aliveAtNightStart.has(p.id) && hasEffect(p, 'dead'),
+  )
+
+  for (const player of nightDeaths) {
+    updatedGame = addHistoryEntry(updatedGame, {
+      type: 'effect_added',
+      message: [
+        {
+          type: 'i18n',
+          key: 'history.diedInNight',
+          params: { player: player.id },
+        },
+      ],
+      data: { playerId: player.id, effectType: 'dead' },
+    })
   }
 
   // Expire effects that should end at end of night (e.g., Monk's protection)
@@ -537,6 +540,20 @@ export function nominate(
   }
 
   return applyPipelineChanges(game, result.stateChanges)
+}
+
+/**
+ * Cancel the most recent nomination, removing it (and anything recorded after
+ * it) from history. Without this, backing out of the voting screen leaves the
+ * nominator and nominee marked as having nominated / been nominated for the day.
+ */
+export function cancelNomination(game: Game): Game {
+  for (let i = game.history.length - 1; i >= 0; i--) {
+    if (game.history[i].type === 'nomination') {
+      return { ...game, history: game.history.slice(0, i) }
+    }
+  }
+  return game
 }
 
 // ============================================================================

@@ -613,3 +613,77 @@ describe('applyPerceptionOverrides', () => {
     expect(afterResult.alignment).toBe('evil')
   })
 })
+
+// ============================================================================
+// MALFUNCTION DISABLES MISREGISTRATION (poisoned/drunk register truthfully)
+// ============================================================================
+
+describe('malfunction disables misregistration', () => {
+  it('perceive() ignores a configured misregistration when the target is poisoned', () => {
+    // Recluse configured to register as evil, but poisoned → registers truthfully (good)
+    const recluse = addEffectTo(
+      addEffectTo(
+        makePlayer({ id: 'p1', roleId: 'recluse' }),
+        'misregister',
+        {
+          canRegisterAs: { teams: ['minion', 'demon'], alignments: ['evil'] },
+          perceiveAs: { team: 'demon', alignment: 'evil' },
+        },
+      ),
+      'poisoned',
+    )
+    const observer = makePlayer({ id: 'p2', roleId: 'chef' })
+    const state = makeState({ players: [recluse, observer] })
+
+    const result = perceive(recluse, observer, 'alignment', state)
+    expect(result.alignment).toBe('good')
+    expect(result.team).toBe('outsider')
+  })
+
+  it('canRegisterAsTeam / canRegisterAsAlignment return false for a malfunctioning player', () => {
+    const recluse = addEffectTo(
+      addEffectTo(
+        makePlayer({ id: 'p1', roleId: 'recluse' }),
+        'misregister',
+        { canRegisterAs: { teams: ['minion', 'demon'], alignments: ['evil'] } },
+      ),
+      'poisoned',
+    )
+    expect(canRegisterAsTeam(recluse, 'demon')).toBe(false)
+    expect(canRegisterAsAlignment(recluse, 'evil')).toBe(false)
+  })
+
+  it('getAmbiguousPlayers excludes malfunctioning players (no perception-config step)', () => {
+    const healthyRecluse = addEffectTo(
+      makePlayer({ id: 'p1', roleId: 'recluse' }),
+      'misregister',
+      { canRegisterAs: { teams: ['minion', 'demon'], alignments: ['evil'] } },
+    )
+    const poisonedRecluse = addEffectTo(
+      addEffectTo(
+        makePlayer({ id: 'p2', roleId: 'recluse' }),
+        'misregister',
+        { canRegisterAs: { teams: ['minion', 'demon'], alignments: ['evil'] } },
+      ),
+      'poisoned',
+    )
+
+    const result = getAmbiguousPlayers([healthyRecluse, poisonedRecluse], 'team')
+    expect(result.map((p) => p.id)).toEqual(['p1'])
+  })
+
+  it('keeps unconditional modifiers under malfunction (Drunk still registers as Drunk/Outsider)', () => {
+    // The `drunk` effect is poisonsAbility AND has a perception modifier with no
+    // canRegisterAs — it must survive the malfunction gate.
+    const drunk = addEffectTo(
+      makePlayer({ id: 'p1', roleId: 'washerwoman' }),
+      'drunk',
+    )
+    const observer = makePlayer({ id: 'p2', roleId: 'undertaker' })
+    const state = makeState({ players: [drunk, observer] })
+
+    const result = perceive(drunk, observer, 'role', state)
+    expect(result.roleId).toBe('drunk')
+    expect(result.team).toBe('outsider')
+  })
+})
