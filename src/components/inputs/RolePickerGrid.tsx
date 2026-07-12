@@ -10,6 +10,7 @@ import {
 } from '../../lib/i18n'
 import { Icon } from '../atoms'
 import { IconName } from '../atoms/icon'
+import { CharacterToken } from '../items/CharacterToken'
 import { filterVisibleEffects } from '../items/PlayerRoleIcon'
 import { cn } from '../../lib/utils'
 
@@ -139,8 +140,6 @@ export function RolePickerGrid({
                   colorMode === 'team'
                     ? team.colors.badgeText
                     : 'text-amber-200'
-                const iconColor =
-                  colorMode === 'team' ? team.colors.text : 'text-amber-300'
 
                 return (
                   <button
@@ -186,21 +185,12 @@ export function RolePickerGrid({
                         </div>
                       )}
 
-                      {/* Role icon medallion */}
-                      <div
-                        className={cn(
-                          'w-9 h-9 rounded-full flex items-center justify-center mx-auto',
-                          isSelected
-                            ? team.colors.cardIconBg
-                            : 'bg-white/5 border border-white/10',
-                        )}
-                      >
-                        <Icon
-                          name={role.icon}
-                          size='md'
-                          className={
-                            isSelected ? iconColor : 'text-parchment-500'
-                          }
+                      {/* Real character-token art (locked "tokens are always real") */}
+                      <div className='flex justify-center'>
+                        <CharacterToken
+                          roleId={role.id}
+                          team={role.team}
+                          size={44}
                         />
                       </div>
 

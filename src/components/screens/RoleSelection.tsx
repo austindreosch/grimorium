@@ -24,6 +24,7 @@ import {
   getRoleDescription,
 } from '../../lib/i18n'
 import { Button, Icon, Badge, BackButton } from '../atoms'
+import { CharacterToken } from '../items/CharacterToken'
 import { ScreenFooter } from '../layouts/ScreenFooter'
 import { cn } from '../../lib/utils'
 
@@ -908,22 +909,9 @@ function RoleCard({
           </div>
         )}
 
-        {/* Role icon medallion */}
-        <div
-          className={cn(
-            'w-9 h-9 rounded-full flex items-center justify-center mx-auto',
-            isSelected
-              ? team.colors.cardIconBg
-              : 'bg-white/5 border border-white/10',
-          )}
-        >
-          <Icon
-            name={role.icon}
-            size='md'
-            className={
-              isSelected ? team.colors.text : 'text-parchment-500'
-            }
-          />
+        {/* Real character-token art (locked "tokens are always real") */}
+        <div className='flex justify-center'>
+          <CharacterToken roleId={role.id} team={role.team} size={44} />
         </div>
         <div
           className={cn(
