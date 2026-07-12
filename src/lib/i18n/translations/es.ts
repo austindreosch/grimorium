@@ -373,6 +373,16 @@ const es: Translations = {
     useThisPool: 'Usar Este Pool',
     presetApplied: '{preset} aplicado',
     rolesSelected: '{count} roles seleccionados',
+    // Script import
+    imported: 'Guion Importado',
+    importScript: 'Importar un guion (pega JSON)',
+    importPlaceholder: 'Pega aquí el JSON del creador de guiones…',
+    importLoad: 'Cargar',
+    importUse: 'Usar Este Guion',
+    importRolesFound: '{count} roles reconocidos',
+    importDropped: '{count} aún no soportados: {names}',
+    importInvalid: 'Eso no parece un JSON de guion.',
+    importEmpty: 'No se encontraron roles compatibles en ese guion.',
   },
 
   howToPlay: {

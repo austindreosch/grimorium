@@ -373,6 +373,16 @@ export type Translations = {
     useThisPool: string
     presetApplied: string
     rolesSelected: string
+    // Script import
+    imported: string
+    importScript: string
+    importPlaceholder: string
+    importLoad: string
+    importUse: string
+    importRolesFound: string
+    importDropped: string
+    importInvalid: string
+    importEmpty: string
   }
 
   // How To Play

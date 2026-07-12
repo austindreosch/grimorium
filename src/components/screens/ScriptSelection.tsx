@@ -1,6 +1,9 @@
-import { useI18n } from '../../lib/i18n'
-import { SCRIPTS, ScriptId } from '../../lib/scripts'
-import { Icon, BackButton } from '../atoms'
+import { useState } from 'react'
+import { useI18n, interpolate } from '../../lib/i18n'
+import { SCRIPTS, ScriptId, setImportedScript } from '../../lib/scripts'
+import { parseScriptJson, ScriptImportResult } from '../../lib/scripts/import'
+import { getRoleName } from '../../lib/i18n'
+import { Icon, BackButton, Button } from '../atoms'
 import { cn } from '../../lib/utils'
 
 type Props = {
@@ -12,10 +15,32 @@ type Props = {
 const SCRIPT_ORDER: ScriptId[] = ['trouble-brewing', 'custom']
 
 export function ScriptSelection({ players, onSelect, onBack }: Props) {
-  const { t } = useI18n()
+  const { t, language } = useI18n()
+  const [showImport, setShowImport] = useState(false)
+  const [importText, setImportText] = useState('')
+  const [importResult, setImportResult] = useState<ScriptImportResult | null>(
+    null,
+  )
+  const [importError, setImportError] = useState<string | null>(null)
 
   const getScriptName = (id: ScriptId) => {
     return t.scripts[id as keyof typeof t.scripts] ?? id
+  }
+
+  const handleLoad = () => {
+    try {
+      setImportResult(parseScriptJson(importText))
+      setImportError(null)
+    } catch {
+      setImportResult(null)
+      setImportError(t.scripts.importInvalid)
+    }
+  }
+
+  const handleUseImport = () => {
+    if (!importResult || importResult.roles.length === 0) return
+    setImportedScript(importResult.roles)
+    onSelect('imported')
   }
 
   return (
@@ -139,6 +164,83 @@ export function ScriptSelection({ players, onSelect, onBack }: Props) {
               </button>
             )
           })}
+        </div>
+
+        {/* Import a script JSON */}
+        <div className='mt-6'>
+          <button
+            type='button'
+            onClick={() => setShowImport((v) => !v)}
+            className='flex w-full items-center justify-center gap-2 rounded-xl border border-board-gold/25 bg-white/5 px-4 py-3 text-sm text-parchment-300 transition-colors hover:bg-white/10'
+          >
+            <Icon name='bookMarked' size='sm' className='text-board-gold/70' />
+            {t.scripts.importScript}
+          </button>
+
+          {showImport && (
+            <div className='mt-3 rounded-2xl border border-board-gold/30 bg-parchment-100 p-4'>
+              <textarea
+                value={importText}
+                onChange={(e) => setImportText(e.target.value)}
+                placeholder={t.scripts.importPlaceholder}
+                rows={5}
+                className='w-full resize-y rounded-lg border border-board-ink/20 bg-parchment-50 p-3 font-mono text-xs text-board-ink placeholder:text-board-ink/40 focus:outline-none focus:ring-2 focus:ring-board-gold/40'
+              />
+              <div className='mt-2 flex justify-end'>
+                <Button
+                  variant='secondary'
+                  size='sm'
+                  onClick={handleLoad}
+                  disabled={!importText.trim()}
+                >
+                  {t.scripts.importLoad}
+                </Button>
+              </div>
+
+              {importError && (
+                <p className='mt-3 text-sm text-red-700'>{importError}</p>
+              )}
+
+              {importResult && (
+                <div className='mt-3 border-t border-board-ink/15 pt-3'>
+                  {importResult.name && (
+                    <p className='font-tarot text-sm uppercase tracking-wider text-board-ink'>
+                      {importResult.name}
+                    </p>
+                  )}
+                  <p className='mt-1 text-sm text-board-ink/80'>
+                    {interpolate(t.scripts.importRolesFound, {
+                      count: importResult.roles.length,
+                    })}
+                  </p>
+                  {importResult.dropped.length > 0 && (
+                    <p className='mt-1 text-xs text-board-ink/55'>
+                      {interpolate(t.scripts.importDropped, {
+                        count: importResult.dropped.length,
+                        names: importResult.dropped.join(', '),
+                      })}
+                    </p>
+                  )}
+                  {importResult.roles.length === 0 ? (
+                    <p className='mt-2 text-sm text-red-700'>
+                      {t.scripts.importEmpty}
+                    </p>
+                  ) : (
+                    <div className='mt-3'>
+                      <Button variant='dawn' size='sm' onClick={handleUseImport}>
+                        {t.scripts.importUse}
+                      </Button>
+                      <p className='mt-2 text-xs text-board-ink/50'>
+                        {importResult.roles
+                          .map((r) => getRoleName(r, language))
+                          .join(' · ')}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

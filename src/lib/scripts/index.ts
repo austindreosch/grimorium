@@ -9,7 +9,7 @@ export type { GeneratorPreset, GeneratedPool } from './types'
 // ALL ROLE IDS (static list to avoid circular dependency with roles module)
 // ============================================================================
 
-const ALL_ROLE_IDS: RoleId[] = [
+export const ALL_ROLE_IDS: RoleId[] = [
   'villager',
   'imp',
   'washerwoman',
@@ -76,6 +76,24 @@ export const SCRIPTS: Record<ScriptId, ScriptDefinition> = {
     roles: ALL_ROLE_IDS,
     enforceDistribution: false,
   },
+  // Populated at runtime by setImportedScript() from a pasted script JSON.
+  // ponytail: single in-memory imported script per session (not persisted). If
+  // we ever need multiple or reload-surviving imports, thread a full
+  // ScriptDefinition through the new-game flow instead of a shared holder.
+  imported: {
+    id: 'imported',
+    icon: 'bookMarked',
+    roles: [],
+    enforceDistribution: true,
+  },
+}
+
+/**
+ * Replace the in-session imported script's role list (from parseScriptJson).
+ * Must be called before navigating into role selection with scriptId 'imported'.
+ */
+export function setImportedScript(roles: RoleId[]): void {
+  SCRIPTS.imported.roles = roles
 }
 
 // ============================================================================

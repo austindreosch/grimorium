@@ -1,7 +1,7 @@
 import { RoleId } from '../roles/types'
 import { IconName } from '../../components/atoms/icon'
 
-export type ScriptId = 'trouble-brewing' | 'custom'
+export type ScriptId = 'trouble-brewing' | 'custom' | 'imported'
 
 export type ScriptDefinition = {
   id: ScriptId

@@ -371,6 +371,16 @@ const en: Translations = {
     useThisPool: 'Use This Pool',
     presetApplied: '{preset} applied',
     rolesSelected: '{count} roles selected',
+    // Script import
+    imported: 'Imported Script',
+    importScript: 'Import a script (paste JSON)',
+    importPlaceholder: 'Paste script-tool JSON here…',
+    importLoad: 'Load',
+    importUse: 'Use This Script',
+    importRolesFound: '{count} roles recognized',
+    importDropped: '{count} not supported yet: {names}',
+    importInvalid: "That doesn't look like a script JSON.",
+    importEmpty: 'No supported roles found in that script.',
   },
 
   howToPlay: {
