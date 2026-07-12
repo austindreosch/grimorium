@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useDrag } from '@use-gesture/react'
 import { PlayerState, EffectInstance, isAlive } from '../../lib/types'
+import { isUnassigned } from '../../lib/unassigned'
 import { RoleDefinition } from '../../lib/roles/types'
 import { getRoleAbility, getRoleDescription, getRoleName } from '../../lib/i18n/registry'
 import { ReminderDef } from '../../lib/reminders/catalog'
@@ -67,6 +68,8 @@ export function BoardToken({
 
   const alive = isAlive(player)
   const hasReminders = characterReminders.length > 0
+  // An unassigned seat has no character, so no ability to flip to and reveal.
+  const unassigned = isUnassigned(player.roleId)
 
   // Collapsing the seat (board sets expanded=false) resets its transient UI.
   useEffect(() => {
@@ -115,8 +118,8 @@ export function BoardToken({
       data-seat-id={player.id}
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Info card — the "flip the token over" ability view */}
-      {mode === 'info' ? (
+      {/* Info card — the "flip the token over" ability view (never for a blank seat) */}
+      {mode === 'info' && !unassigned ? (
         <div
           className='absolute left-1/2 top-0 -translate-x-1/2 rounded-2xl border border-board-gold/40 bg-parchment-200 bg-cover p-3 pt-9 shadow-xl'
           style={{ width: Math.max(180, size * 2.1), zIndex: 40 }}
@@ -189,13 +192,15 @@ export function BoardToken({
           {/* Satellite actions — only when expanded and interactive */}
           {expanded && !readOnly && (
             <>
-              <Satellite
-                icon='info'
-                pos={{ x: 0, y: -satOffset }}
-                size={satSize}
-                tone='grey'
-                onClick={() => setMode('info')}
-              />
+              {!unassigned && (
+                <Satellite
+                  icon='info'
+                  pos={{ x: 0, y: -satOffset }}
+                  size={satSize}
+                  tone='grey'
+                  onClick={() => setMode('info')}
+                />
+              )}
               {hasReminders && (
                 <Satellite
                   icon='leaf'
