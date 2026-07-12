@@ -13,6 +13,8 @@ import {
 type Props = {
   onNext: (players: string[]) => void
   onBack: () => void
+  /** Secondary affordance: switch to Guided mode (shown only in the Simple default flow). */
+  onSwitchToGuided?: () => void
 }
 
 type PlayerItem = {
@@ -38,7 +40,7 @@ function initials(name: string): string {
     .join('')
 }
 
-export function PlayerEntry({ onNext, onBack }: Props) {
+export function PlayerEntry({ onNext, onBack, onSwitchToGuided }: Props) {
   const { t } = useI18n()
   const [players, setPlayers] = useState<PlayerItem[]>(() => {
     _nextId = 0
@@ -237,6 +239,15 @@ export function PlayerEntry({ onNext, onBack }: Props) {
               {t.newGame.step1Subtitle}
             </p>
           </div>
+          {onSwitchToGuided && (
+            <button
+              onClick={onSwitchToGuided}
+              className='ml-auto flex items-center gap-1 text-xs text-parchment-400 hover:text-mystic-gold transition-colors'
+            >
+              <Icon name='sparkles' size='xs' />
+              {t.newGame.guidedModeLink}
+            </button>
+          )}
         </div>
       </div>
 
