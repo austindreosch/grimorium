@@ -73,6 +73,8 @@ export type EventType =
   | 'slayer_shot'
   | 'effect_added'
   | 'effect_removed'
+  | 'player_added'
+  | 'player_removed'
   | 'role_changed'
   | 'role_change_revealed'
   | 'setup_action'
@@ -91,10 +93,21 @@ export type HistoryEntry = {
 // GAME
 // ============================================================================
 
+/** How the app runs a game. 'guided' = auto-managed phase flow; 'simple' = board-only, manual. */
+export type GameMode = 'guided' | 'simple'
+
 export type Game = {
   id: string
   name: string
   scriptId: string
+  /** Defaults to 'guided' when absent (back-compat with games saved before Simple Mode). */
+  mode?: GameMode
+  /**
+   * The chosen in-play character set (the "bag"). Drives the Simple Mode reference
+   * panels. Absent on pre-Simple-Mode saves — derive from filled seats as a fallback
+   * (see `getInPlayRoleIds` in game.ts).
+   */
+  inPlayRoleIds?: string[]
   createdAt: number
   history: HistoryEntry[]
 }

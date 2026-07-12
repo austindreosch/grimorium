@@ -3,7 +3,12 @@ import { useDrag } from '@use-gesture/react'
 import { useI18n } from '../../lib/i18n'
 import { Button, Icon, BackButton } from '../atoms'
 import { ScreenFooter } from '../layouts/ScreenFooter'
-import { getLastGamePlayers } from '../../lib/storage'
+import {
+  getLastGamePlayers,
+  getRoster,
+  addToRoster,
+  removeFromRoster,
+} from '../../lib/storage'
 
 type Props = {
   onNext: (players: string[]) => void
@@ -16,11 +21,21 @@ type PlayerItem = {
 }
 
 const MIN_PLAYERS = 5
-const MAX_PLAYERS = 15
+const MAX_PLAYERS = 20
 
 let _nextId = 0
 function makePlayerItem(name: string): PlayerItem {
   return { id: `p-${_nextId++}`, name }
+}
+
+// First letter of the first two words, e.g. "Mary Jane" → "MJ", "Sam" → "S".
+function initials(name: string): string {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? '')
+    .join('')
 }
 
 export function PlayerEntry({ onNext, onBack }: Props) {
@@ -43,6 +58,7 @@ export function PlayerEntry({ onNext, onBack }: Props) {
       .map(() => makePlayerItem(''))
   })
   const [loadedFromLast] = useState(() => getLastGamePlayers().length > 0)
+  const [roster, setRoster] = useState<string[]>(() => getRoster())
   const lastInputRef = useRef<HTMLInputElement>(null)
   const prevLengthRef = useRef(players.length)
 
@@ -170,15 +186,42 @@ export function PlayerEntry({ onNext, onBack }: Props) {
     setPlayers(players.filter((_, i) => i !== index))
   }
 
+  // Fill the first empty slot with a saved name, or append a new row.
+  const addFromRoster = (name: string) => {
+    setPlayers((prev) => {
+      const emptyIdx = prev.findIndex((p) => p.name.trim().length === 0)
+      if (emptyIdx >= 0) {
+        return prev.map((p, i) => (i === emptyIdx ? { ...p, name } : p))
+      }
+      if (prev.length >= MAX_PLAYERS) return prev
+      return [...prev, makePlayerItem(name)]
+    })
+  }
+
+  const deleteFromRoster = (name: string) => {
+    removeFromRoster(name)
+    setRoster(getRoster())
+  }
+
   const handleNext = () => {
     const validPlayers = players.filter((p) => p.name.trim().length > 0)
     if (validPlayers.length >= MIN_PLAYERS) {
-      onNext(validPlayers.map((p) => p.name))
+      const names = validPlayers.map((p) => p.name)
+      addToRoster(names)
+      onNext(names)
     }
   }
 
   const validCount = players.filter((p) => p.name.trim().length > 0).length
   const canProceed = validCount >= MIN_PLAYERS
+
+  // Saved people not already entered in the current list.
+  const enteredNames = new Set(
+    players.map((p) => p.name.trim().toLowerCase()).filter(Boolean),
+  )
+  const availableRoster = roster.filter(
+    (n) => !enteredNames.has(n.toLowerCase()),
+  )
 
   return (
     <div className='min-h-app bg-gradient-to-b from-grimoire-purple via-grimoire-dark to-grimoire-darker flex flex-col'>
@@ -267,6 +310,43 @@ export function PlayerEntry({ onNext, onBack }: Props) {
             <Icon name='plus' size='md' />
             {t.newGame.addPlayer}
           </button>
+        )}
+
+        {/* Saved people — tap a circle to add */}
+        {availableRoster.length > 0 && (
+          <div className='mt-8'>
+            <div className='flex items-center gap-2 mb-3 text-parchment-400'>
+              <Icon name='users' size='xs' />
+              <span className='text-xs tracking-wider uppercase'>
+                {t.newGame.savedPeople}
+              </span>
+            </div>
+            <div className='grid grid-cols-4 gap-x-2 gap-y-4 sm:grid-cols-5'>
+              {availableRoster.map((name) => (
+                <div key={name} className='relative flex flex-col items-center'>
+                  <button
+                    onClick={() => addFromRoster(name)}
+                    disabled={maxPlayersReached}
+                    className='group flex flex-col items-center gap-1.5 w-full disabled:opacity-40'
+                  >
+                    <span className='flex items-center justify-center w-14 h-14 rounded-full bg-white/5 border border-parchment-500/30 text-parchment-100 font-tarot text-lg tracking-wide group-hover:border-mystic-gold/60 group-hover:bg-mystic-gold/10 group-active:scale-95 transition-all'>
+                      {initials(name)}
+                    </span>
+                    <span className='text-xs text-parchment-300 text-center leading-tight w-full truncate px-0.5'>
+                      {name}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => deleteFromRoster(name)}
+                    aria-label={`Remove ${name}`}
+                    className='absolute -top-1 -right-0.5 flex items-center justify-center w-5 h-5 rounded-full bg-grimoire-darker border border-parchment-500/30 text-parchment-500/60 hover:text-red-400 hover:border-red-400/50 transition-colors'
+                  >
+                    <Icon name='x' size='xs' />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
         {!canProceed && (
