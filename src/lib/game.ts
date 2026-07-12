@@ -21,6 +21,11 @@ import {
 import { NominateIntent, ExecuteIntent } from './pipeline/types'
 import { clearBoardPosition } from './storage'
 import { trackEvent } from './analytics'
+import { UNASSIGNED_ROLE_ID, isUnassigned } from './unassigned'
+
+// Re-exported from a leaf module so components can import the sentinel guard
+// without pulling this controller's pipeline/perception graph (see unassigned.ts).
+export { UNASSIGNED_ROLE_ID, isUnassigned }
 
 // ============================================================================
 // GAME CREATION
@@ -29,16 +34,6 @@ import { trackEvent } from './analytics'
 export type PlayerSetup = {
   name: string
   roleId: string
-}
-
-/**
- * Sentinel roleId for a seat with no character assigned yet (Simple Mode manual
- * deal). Kept as `''` so `getRole('') → undefined` stays null-safe everywhere.
- */
-export const UNASSIGNED_ROLE_ID = ''
-
-export function isUnassigned(roleId: string): boolean {
-  return roleId === UNASSIGNED_ROLE_ID
 }
 
 /**
