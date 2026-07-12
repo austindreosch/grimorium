@@ -114,6 +114,50 @@ export function getGameSummaries(): GameSummary[] {
 }
 
 // ============================================================================
+// PLAYER ROSTER
+// ============================================================================
+// Saved people names so the storyteller can tap-to-add regulars instead of
+// retyping every game. Device-local only.
+
+const ROSTER_KEY = 'grimoire_roster'
+
+export function getRoster(): string[] {
+  const data = localStorage.getItem(ROSTER_KEY)
+  if (!data) return []
+
+  try {
+    return JSON.parse(data) as string[]
+  } catch {
+    return []
+  }
+}
+
+/** Merge names into the roster (case-insensitive dedupe), kept alphabetical. */
+export function addToRoster(names: string[]): void {
+  const existing = getRoster()
+  const seen = new Set(existing.map((n) => n.toLowerCase()))
+  const merged = [...existing]
+
+  for (const raw of names) {
+    const name = raw.trim()
+    if (name && !seen.has(name.toLowerCase())) {
+      seen.add(name.toLowerCase())
+      merged.push(name)
+    }
+  }
+
+  merged.sort((a, b) => a.localeCompare(b))
+  localStorage.setItem(ROSTER_KEY, JSON.stringify(merged))
+}
+
+export function removeFromRoster(name: string): void {
+  const next = getRoster().filter(
+    (n) => n.toLowerCase() !== name.toLowerCase(),
+  )
+  localStorage.setItem(ROSTER_KEY, JSON.stringify(next))
+}
+
+// ============================================================================
 // BOARD POSITIONS
 // ============================================================================
 // Cosmetic per-game token offsets for the Grimoire Board. Never written to
@@ -146,5 +190,15 @@ export function setBoardPositions(
 ): void {
   const all = getAllBoardPositions()
   all[gameId] = positions
+  localStorage.setItem(BOARD_POSITIONS_KEY, JSON.stringify(all))
+}
+
+/** Drop one player's persisted board offset (e.g. when they're removed from the game). */
+export function clearBoardPosition(gameId: string, playerId: string): void {
+  const all = getAllBoardPositions()
+  const positions = all[gameId]
+  if (!positions || !(playerId in positions)) return
+
+  delete positions[playerId]
   localStorage.setItem(BOARD_POSITIONS_KEY, JSON.stringify(all))
 }

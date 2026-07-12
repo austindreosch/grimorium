@@ -5,6 +5,7 @@ export type Translations = {
   common: {
     continue: string
     confirm: string
+    or: string
     cancel: string
     back: string
     next: string
@@ -42,12 +43,20 @@ export type Translations = {
   newGame: {
     step1Title: string
     step1Subtitle: string
+    chooseMode: string
+    chooseModeSubtitle: string
+    guidedModeName: string
+    guidedModeDesc: string
+    simpleModeName: string
+    simpleModeDesc: string
     addPlayer: string
     playerPlaceholder: string
     minPlayersWarning: string
     maxPlayersWarning: string
     nextSelectRoles: string
     loadedFromLastGame: string
+    savedPeople: string
+    tapToAdd: string
 
     step2Title: string
     step2Subtitle: string
@@ -344,6 +353,8 @@ export type Translations = {
     effectAdded: string
     effectUpdated: string
     effectRemoved: string
+    playerAdded: string
+    playerRemoved: string
     roleChanged: string
     setupAction: string
   }

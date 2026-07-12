@@ -1,8 +1,10 @@
 import {
   Game,
+  GameMode,
   GameState,
   HistoryEntry,
   PlayerState,
+  EffectInstance,
   RichMessage,
   generateId,
   getCurrentState,
@@ -17,6 +19,7 @@ import {
   checkDynamicWinConditions,
 } from './pipeline'
 import { NominateIntent, ExecuteIntent } from './pipeline/types'
+import { clearBoardPosition } from './storage'
 import { trackEvent } from './analytics'
 
 // ============================================================================
@@ -28,32 +31,48 @@ export type PlayerSetup = {
   roleId: string
 }
 
-export function createGame(name: string, scriptId: string, players: PlayerSetup[]): Game {
+/**
+ * Sentinel roleId for a seat with no character assigned yet (Simple Mode manual
+ * deal). Kept as `''` so `getRole('') → undefined` stays null-safe everywhere.
+ */
+export const UNASSIGNED_ROLE_ID = ''
+
+export function isUnassigned(roleId: string): boolean {
+  return roleId === UNASSIGNED_ROLE_ID
+}
+
+/**
+ * The initial effect instances a role grants when assigned. Returns `[]` for an
+ * unassigned or unknown role. Single source of truth for `createGame` and
+ * `setPlayerRole` so assigned-at-creation and assigned-later seats get identical
+ * effects.
+ */
+export function buildInitialEffects(roleId: string): EffectInstance[] {
+  const role = getRole(roleId)
+  if (!role?.initialEffects) return []
+  return role.initialEffects.map((effect) => ({
+    id: generateId(),
+    type: effect.type,
+    data: effect.data ?? {},
+    expiresAt: effect.expiresAt ?? 'never',
+  }))
+}
+
+export function createGame(
+  name: string,
+  scriptId: string,
+  players: PlayerSetup[],
+  mode: GameMode = 'guided',
+  inPlayRoleIds?: string[],
+): Game {
   const gameId = generateId()
 
-  const playerStates: PlayerState[] = players.map((p) => {
-    const role = getRole(p.roleId)
-    const effects: PlayerState['effects'] = []
-
-    // Apply initial effects defined by the role
-    if (role?.initialEffects) {
-      for (const effect of role.initialEffects) {
-        effects.push({
-          id: generateId(),
-          type: effect.type,
-          data: effect.data ?? {},
-          expiresAt: effect.expiresAt ?? 'never',
-        })
-      }
-    }
-
-    return {
-      id: generateId(),
-      name: p.name,
-      roleId: p.roleId,
-      effects,
-    }
-  })
+  const playerStates: PlayerState[] = players.map((p) => ({
+    id: generateId(),
+    name: p.name,
+    roleId: p.roleId,
+    effects: buildInitialEffects(p.roleId),
+  }))
 
   const initialState: GameState = {
     phase: 'setup',
@@ -66,6 +85,8 @@ export function createGame(name: string, scriptId: string, players: PlayerSetup[
     id: gameId,
     name,
     scriptId,
+    mode,
+    ...(inPlayRoleIds ? { inPlayRoleIds } : {}),
     createdAt: Date.now(),
     history: [
       {
@@ -91,6 +112,19 @@ export function createGame(name: string, scriptId: string, players: PlayerSetup[
   })
 
   return game
+}
+
+/**
+ * The in-play character set (the "bag") for the reference panels. Prefers the
+ * stored `inPlayRoleIds`; falls back to the deduped, assigned roleIds of the
+ * current seats for pre-Simple-Mode saves that predate the field.
+ */
+export function getInPlayRoleIds(game: Game): string[] {
+  if (game.inPlayRoleIds) return game.inPlayRoleIds
+  const assigned = getCurrentState(game)
+    .players.map((p) => p.roleId)
+    .filter((id) => !isUnassigned(id))
+  return [...new Set(assigned)]
 }
 
 // ============================================================================
@@ -1075,6 +1109,101 @@ export function addEffectToPlayer(
     },
     undefined,
     { [playerId]: [{ type: effectType, data, expiresAt: 'never' }] },
+  )
+}
+
+/**
+ * Reassign a seat's character (narrator board action — Change Character). Strips
+ * the effects the OLD role granted at assignment, applies the NEW role's initial
+ * effects, changes the roleId, and leaves everything else (dead, poisoned,
+ * reminders, manually-added effects) untouched. Mirrors how `createGame` applies
+ * `buildInitialEffects`, so a seat set here has effect parity with one dealt at
+ * creation. Emits one `role_changed` history entry.
+ *
+ * ponytail: old effects are stripped by *type*. If a role's initial-effect type
+ * were also granted to the seat by another source, that instance would be dropped
+ * too — no current BOTC role shares an initial-effect type across sources, so this
+ * is safe; revisit (strip by instance id) if one ever does.
+ */
+export function setPlayerRole(
+  game: Game,
+  playerId: string,
+  roleId: string,
+): Game {
+  const player = getCurrentState(game).players.find((p) => p.id === playerId)
+  if (!player) return game
+
+  const oldEffectTypes = buildInitialEffects(player.roleId).map((e) => e.type)
+  const newEffects = buildInitialEffects(roleId)
+
+  return addHistoryEntry(
+    game,
+    {
+      type: 'role_changed',
+      message: [
+        {
+          type: 'i18n',
+          key: 'history.roleChanged',
+          params: { player: playerId, role: roleId },
+        },
+      ],
+      data: { playerId, roleId, previousRoleId: player.roleId, source: 'narrator' },
+    },
+    undefined,
+    { [playerId]: newEffects },
+    { [playerId]: oldEffectTypes },
+    { [playerId]: roleId },
+  )
+}
+
+/**
+ * Append a new unassigned seat (narrator board action). The seat starts with no
+ * character (`UNASSIGNED_ROLE_ID`) and no effects; the storyteller assigns it via
+ * Change Character. Emits one `player_added` history entry.
+ */
+export function addPlayer(game: Game, name: string): Game {
+  const state = getCurrentState(game)
+  const newPlayer: PlayerState = {
+    id: generateId(),
+    name,
+    roleId: UNASSIGNED_ROLE_ID,
+    effects: [],
+  }
+
+  return addHistoryEntry(
+    game,
+    {
+      type: 'player_added',
+      message: [{ type: 'i18n', key: 'history.playerAdded', params: { name } }],
+      data: { playerId: newPlayer.id, name, source: 'narrator' },
+    },
+    { players: [...state.players, newPlayer] },
+  )
+}
+
+/**
+ * Remove a seat (narrator board action). Drops the player from state (which drops
+ * their own effects) and clears their persisted board position. Past history
+ * entries referencing them are left intact — the event log is append-only, so
+ * their name still appears in prior events. Emits one `player_removed` entry.
+ */
+export function removePlayer(game: Game, playerId: string): Game {
+  const state = getCurrentState(game)
+  const player = state.players.find((p) => p.id === playerId)
+  if (!player) return game
+
+  clearBoardPosition(game.id, playerId)
+
+  return addHistoryEntry(
+    game,
+    {
+      type: 'player_removed',
+      message: [
+        { type: 'i18n', key: 'history.playerRemoved', params: { name: player.name } },
+      ],
+      data: { playerId, name: player.name, source: 'narrator' },
+    },
+    { players: state.players.filter((p) => p.id !== playerId) },
   )
 }
 

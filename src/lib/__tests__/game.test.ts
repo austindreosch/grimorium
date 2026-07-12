@@ -15,7 +15,13 @@ import {
   getNomineesToday,
   getNominatorsToday,
   getLastNightDeaths,
+  setPlayerRole,
+  addPlayer,
+  removePlayer,
+  getInPlayRoleIds,
+  buildInitialEffects,
 } from '../game'
+import { getBoardPositions, setBoardPositions } from '../storage'
 import { getCurrentState, hasEffect, PlayerState } from '../types'
 import {
   makePlayer,
@@ -597,5 +603,173 @@ describe('manual effect management', () => {
     const state = getCurrentState(updated)
     const p1 = state.players.find((p) => p.id === 'p1')!
     expect(hasEffect(p1, 'safe')).toBe(false)
+  })
+})
+
+// ============================================================================
+// buildInitialEffects
+// ============================================================================
+
+describe('buildInitialEffects', () => {
+  it('returns [] for an unassigned role', () => {
+    expect(buildInitialEffects('')).toEqual([])
+  })
+
+  it('returns [] for an unknown role', () => {
+    expect(buildInitialEffects('unknown_role')).toEqual([])
+  })
+
+  it('returns the role-declared initial effects for a real role', () => {
+    expect(buildInitialEffects('soldier').map((e) => e.type)).toEqual(['safe'])
+  })
+})
+
+// ============================================================================
+// setPlayerRole (Change Character)
+// ============================================================================
+
+describe('setPlayerRole', () => {
+  it('drops the old role effects, adds the new ones, keeps unrelated effects', () => {
+    const game = createGame('T', 'trouble-brewing', [
+      { name: 'Alice', roleId: 'soldier' },
+      { name: 'Bob', roleId: 'imp' },
+    ])
+    const soldierId = getCurrentState(game).players[0].id
+
+    // Unrelated effect the swap must preserve.
+    const withDead = addEffectToPlayer(game, soldierId, 'dead')
+    const reassigned = setPlayerRole(withDead, soldierId, 'virgin')
+
+    const player = getCurrentState(reassigned).players.find(
+      (p) => p.id === soldierId,
+    )!
+    expect(player.roleId).toBe('virgin')
+    expect(hasEffect(player, 'safe')).toBe(false) // Soldier's effect stripped
+    expect(hasEffect(player, 'pure')).toBe(true) // Virgin's effect added
+    expect(hasEffect(player, 'dead')).toBe(true) // unrelated effect untouched
+  })
+
+  it('produces the same effect types as a createGame seat (parity)', () => {
+    const viaCreate = createGame('T', 'trouble-brewing', [
+      { name: 'A', roleId: 'soldier' },
+    ])
+    const createTypes = getCurrentState(viaCreate)
+      .players[0].effects.map((e) => e.type)
+      .sort()
+
+    const blank = createGame('T', 'trouble-brewing', [{ name: 'A', roleId: '' }])
+    const seatId = getCurrentState(blank).players[0].id
+    const assigned = setPlayerRole(blank, seatId, 'soldier')
+    const assignedTypes = getCurrentState(assigned)
+      .players[0].effects.map((e) => e.type)
+      .sort()
+
+    expect(assignedTypes).toEqual(createTypes)
+  })
+
+  it('emits a single role_changed history entry', () => {
+    const game = createGame('T', 'trouble-brewing', [
+      { name: 'A', roleId: '' },
+    ])
+    const seatId = getCurrentState(game).players[0].id
+    const after = setPlayerRole(game, seatId, 'soldier')
+    expect(after.history.length).toBe(game.history.length + 1)
+    expect(after.history.at(-1)!.type).toBe('role_changed')
+  })
+})
+
+// ============================================================================
+// getInPlayRoleIds
+// ============================================================================
+
+describe('getInPlayRoleIds', () => {
+  it('falls back to deduped, assigned seat roles when the field is absent', () => {
+    const game = createGame('T', 'trouble-brewing', [
+      { name: 'A', roleId: 'washerwoman' },
+      { name: 'B', roleId: 'chef' },
+      { name: 'C', roleId: 'washerwoman' }, // duplicate
+      { name: 'D', roleId: '' }, // unassigned — excluded
+    ])
+    expect(game.inPlayRoleIds).toBeUndefined()
+    expect(getInPlayRoleIds(game).sort()).toEqual(['chef', 'washerwoman'])
+  })
+
+  it('returns the stored bag verbatim when present', () => {
+    const game = createGame(
+      'T',
+      'trouble-brewing',
+      [{ name: 'A', roleId: '' }],
+      'simple',
+      ['imp', 'washerwoman'],
+    )
+    expect(getInPlayRoleIds(game)).toEqual(['imp', 'washerwoman'])
+  })
+})
+
+// ============================================================================
+// addPlayer / removePlayer (roster)
+// ============================================================================
+
+describe('addPlayer', () => {
+  it('appends an unassigned, effect-free seat', () => {
+    const game = createGame('T', 'trouble-brewing', [
+      { name: 'Alice', roleId: 'imp' },
+    ])
+    const after = addPlayer(game, 'Bob')
+    const players = getCurrentState(after).players
+    expect(players).toHaveLength(2)
+    expect(players[1].name).toBe('Bob')
+    expect(players[1].roleId).toBe('')
+    expect(players[1].effects).toEqual([])
+    expect(after.history.at(-1)!.type).toBe('player_added')
+  })
+})
+
+describe('removePlayer', () => {
+  beforeEach(() => {
+    // ponytail: minimal localStorage stub — node test env has no DOM.
+    const store = new Map<string, string>()
+    globalThis.localStorage = {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+      removeItem: (k: string) => void store.delete(k),
+      clear: () => store.clear(),
+      key: () => null,
+      length: 0,
+    } as Storage
+  })
+
+  it('drops the player and clears their board position, leaving history intact', () => {
+    const game = createGame('T', 'trouble-brewing', [
+      { name: 'Alice', roleId: 'villager' },
+      { name: 'Bob', roleId: 'imp' },
+    ])
+    const aliceId = getCurrentState(game).players[0].id
+    const bobId = getCurrentState(game).players[1].id
+
+    setBoardPositions(game.id, {
+      [aliceId]: { x: 5, y: 5 },
+      [bobId]: { x: 1, y: 1 },
+    })
+
+    // A history entry that references Alice must survive the removal.
+    const withEffect = addEffectToPlayer(game, aliceId, 'dead')
+    const priorEntry = withEffect.history.at(-1)!
+
+    const after = removePlayer(withEffect, aliceId)
+
+    // Player gone from current state.
+    expect(
+      getCurrentState(after).players.find((p) => p.id === aliceId),
+    ).toBeUndefined()
+    // Their board position cleared; the other player's kept.
+    expect(getBoardPositions(game.id)[aliceId]).toBeUndefined()
+    expect(getBoardPositions(game.id)[bobId]).toEqual({ x: 1, y: 1 })
+    // Pre-existing history entry referencing Alice is present and unchanged.
+    expect(after.history.find((e) => e.id === priorEntry.id)).toEqual(priorEntry)
+    // The game_created entry still lists Alice.
+    const createdPlayers = after.history[0].data.players as { id: string }[]
+    expect(createdPlayers.some((p) => p.id === aliceId)).toBe(true)
+    expect(after.history.at(-1)!.type).toBe('player_removed')
   })
 })
