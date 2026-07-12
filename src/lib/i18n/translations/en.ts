@@ -44,6 +44,7 @@ const en: Translations = {
     chooseModeSubtitle: 'How do you want to run this game?',
     guidedModeName: 'Guided',
     guidedModeDesc: 'The app walks you through every phase — role reveals, night order, and prompts. Best if you want it managed for you.',
+    guidedModeLink: 'Guided mode',
     simpleModeName: 'Simple',
     simpleModeDesc: 'Just the grimoire board. Drag tokens, place reminders, and toggle life yourself. No step-by-step guidance.',
     addPlayer: 'Add Player',
@@ -61,6 +62,14 @@ const en: Translations = {
     needAtLeastImp: 'Need at least 1 Imp',
     nextAssignRoles: 'Next: Assign Roles',
     suggested: 'Suggested',
+
+    dealTitle: 'Deal Characters',
+    dealSubtitle: '{roles} characters for {players} players',
+    dealShuffle: 'Shuffle & pass out',
+    dealShuffleDesc: 'Randomly deal the chosen characters to your players — real tokens land on every seat.',
+    dealManual: 'Assign manually',
+    dealManualDesc: 'Start with blank seats and assign each character yourself on the board.',
+    unassignedCount: '{count} unassigned',
 
     step3Title: 'New Game',
     step3Subtitle: 'Step 3: Assign roles (optional)',
@@ -290,6 +299,7 @@ const en: Translations = {
       dragHint: 'Drag onto a player · drop in the centre to remove',
       noReminders: 'No tokens',
       open: 'Board',
+      unassignedSeat: 'Unassigned seat',
     },
   },
 

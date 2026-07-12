@@ -47,6 +47,7 @@ export type Translations = {
     chooseModeSubtitle: string
     guidedModeName: string
     guidedModeDesc: string
+    guidedModeLink: string
     simpleModeName: string
     simpleModeDesc: string
     addPlayer: string
@@ -64,6 +65,15 @@ export type Translations = {
     needAtLeastImp: string
     nextAssignRoles: string
     suggested: string
+
+    // Simple-Mode deal step
+    dealTitle: string
+    dealSubtitle: string
+    dealShuffle: string
+    dealShuffleDesc: string
+    dealManual: string
+    dealManualDesc: string
+    unassignedCount: string
 
     step3Title: string
     step3Subtitle: string
@@ -292,6 +302,7 @@ export type Translations = {
       dragHint: string
       noReminders: string
       open: string
+      unassignedSeat: string
     }
   }
 

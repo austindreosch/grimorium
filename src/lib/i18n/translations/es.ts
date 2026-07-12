@@ -44,6 +44,7 @@ const es: Translations = {
     chooseModeSubtitle: '¿Cómo quieres dirigir esta partida?',
     guidedModeName: 'Guiado',
     guidedModeDesc: 'La app te guía por cada fase — revelación de roles, orden nocturno y avisos. Ideal si quieres que se gestione por ti.',
+    guidedModeLink: 'Modo guiado',
     simpleModeName: 'Simple',
     simpleModeDesc: 'Solo el tablero del grimorio. Arrastra fichas, coloca recordatorios y alterna la vida tú mismo. Sin guía paso a paso.',
     addPlayer: 'Añadir Jugador',
@@ -61,6 +62,14 @@ const es: Translations = {
     needAtLeastImp: 'Se necesita al menos 1 Imp',
     nextAssignRoles: 'Siguiente: Asignar Roles',
     suggested: 'Sugerido',
+
+    dealTitle: 'Repartir Personajes',
+    dealSubtitle: '{roles} personajes para {players} jugadores',
+    dealShuffle: 'Barajar y repartir',
+    dealShuffleDesc: 'Reparte al azar los personajes elegidos entre tus jugadores — cada asiento recibe su ficha real.',
+    dealManual: 'Asignar manualmente',
+    dealManualDesc: 'Empieza con asientos en blanco y asigna cada personaje tú mismo en el tablero.',
+    unassignedCount: '{count} sin asignar',
 
     step3Title: 'Nueva Partida',
     step3Subtitle: 'Paso 3: Asignar roles (opcional)',
@@ -292,6 +301,7 @@ const es: Translations = {
       dragHint: 'Arrastra sobre un jugador · suelta en el centro para quitar',
       noReminders: 'Sin fichas',
       open: 'Grimorio',
+      unassignedSeat: 'Asiento sin asignar',
     },
   },
 
