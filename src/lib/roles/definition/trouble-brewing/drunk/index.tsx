@@ -5,6 +5,8 @@ import {
   useI18n,
   registerRoleTranslations,
   getRoleTranslations,
+  getRoleName,
+  getRoleAbility,
 } from '../../../../i18n'
 import { DefaultRoleReveal } from '../../../../../components/items/DefaultRoleReveal'
 import { Button, Icon } from '../../../../../components/atoms'
@@ -109,6 +111,18 @@ function DrunkSetupAction({ player, state, onComplete }: SetupActionProps) {
             colorMode='team'
           />
         </div>
+
+        {/* Ability the Drunk will believe they have — context for the narrator */}
+        {selectedRole && (
+          <div className='rounded-xl border border-board-gold/30 bg-parchment-100 p-4'>
+            <p className='font-tarot text-sm uppercase tracking-wider text-board-ink mb-1'>
+              {getRoleName(selectedRole, language)}
+            </p>
+            <p className='font-read text-sm leading-snug text-board-ink/80'>
+              {getRoleAbility(selectedRole, language)}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Footer */}
