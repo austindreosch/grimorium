@@ -46,7 +46,7 @@ export function NarratorSetupLayout({
         'min-h-app flex flex-col bg-gradient-to-b',
         isPlayerChoice
           ? 'from-amber-950 via-orange-950/50 to-grimoire-darker'
-          : 'from-indigo-950 via-grimoire-purple to-grimoire-darker',
+          : 'from-[#16213a] via-board-leather to-board-leather',
       )}
     >
       {/* Audience Banner */}

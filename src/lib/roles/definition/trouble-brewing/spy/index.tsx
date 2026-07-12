@@ -47,7 +47,7 @@ const definition: RoleDefinition = {
   id: 'spy',
   team: 'minion',
   icon: 'hatGlasses',
-  nightOrder: 36, // Late — sees up-to-date state after most actions
+  nightOrder: 49, // Latest — sees up-to-date state after all actions
   chaos: 55,
 
   shouldWake: (_game, player) => isAlive(player),

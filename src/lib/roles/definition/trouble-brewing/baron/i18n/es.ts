@@ -1,6 +1,7 @@
 const es = {
   name: 'Barón',
   description: 'Hay Forasteros extra en juego. [+2 Forasteros]',
+  ability: 'Hay Forasteros extra en juego. [+2 Forasteros]',
   quote: 'La corrupción empieza arriba. Desde ahí se filtra.',
   lines: [
     { type: 'SETUP', text: 'Se añaden dos Forasteros extra al juego, reemplazando Aldeanos.' },

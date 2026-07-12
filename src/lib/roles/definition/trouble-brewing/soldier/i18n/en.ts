@@ -1,6 +1,7 @@
 const en = {
   name: 'Soldier',
   description: 'You are safe from the Demon.',
+  ability: 'You are safe from the Demon.',
   quote: 'The shield holds. It always holds.',
   lines: [
     { type: 'PASSIVE', text: 'You cannot be killed by the Demon.' },

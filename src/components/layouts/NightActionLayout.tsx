@@ -43,12 +43,12 @@ export function NightActionLayout({
     if (audience === 'narrator') {
       return isEvil
         ? 'from-red-950 via-grimoire-blood to-grimoire-darker'
-        : 'from-indigo-950 via-grimoire-purple to-grimoire-darker'
+        : 'from-[#16213a] via-board-leather to-board-leather'
     }
     // Default (no audience or player_reveal): role-themed
     return isEvil
       ? 'from-red-950 via-grimoire-blood to-grimoire-darker'
-      : 'from-indigo-950 via-grimoire-purple to-grimoire-darker'
+      : 'from-[#16213a] via-board-leather to-board-leather'
   }
 
   // Determine header icon colors based on audience

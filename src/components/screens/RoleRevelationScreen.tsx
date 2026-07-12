@@ -5,6 +5,7 @@ import { getTeam } from '../../lib/teams'
 import { useI18n, getRoleName } from '../../lib/i18n'
 import { Button, Icon, BackButton } from '../atoms'
 import { ScreenFooter } from '../layouts/ScreenFooter'
+import { CharacterToken } from '../items/CharacterToken'
 import { cn } from '../../lib/utils'
 
 type Props = {
@@ -140,29 +141,19 @@ function PlayerRevealRow({
           : 'bg-mystic-gold/5 hover:bg-mystic-gold/10 border border-mystic-gold/20',
       )}
     >
-      {/* Role Icon */}
-      <div
-        className={cn(
-          'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 border',
-          isRevealed
-            ? 'bg-parchment-500/10 border-parchment-500/20'
-            : team?.isEvil
-              ? 'bg-red-900/30 border-red-600/30'
-              : 'bg-mystic-gold/10 border-mystic-gold/20',
-        )}
-      >
-        {role ? (
-          <Icon
-            name={role.icon}
-            size='md'
-            className={cn(
-              isRevealed ? 'text-parchment-500' : team?.colors.text,
-            )}
-          />
-        ) : (
+      {/* Real character token art */}
+      {role ? (
+        <CharacterToken
+          roleId={role.id}
+          team={role.team}
+          size={44}
+          className={cn('flex-shrink-0', isRevealed && 'opacity-70')}
+        />
+      ) : (
+        <div className='w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 border bg-parchment-500/10 border-parchment-500/20'>
           <Icon name='user' size='md' className='text-parchment-400' />
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Player Info */}
       <div className='flex-1 min-w-0'>

@@ -2,6 +2,7 @@ const es = {
   name: 'Mujer Escarlata',
   description:
     'Si hay 5 o más jugadores vivos y el Demonio muere, tú te conviertes en el Demonio.',
+  ability: 'Si hay 5 o más jugadores vivos y el Demonio muere, tú te conviertes en el Demonio. (Los Viajeros no cuentan.)',
   quote: 'Cuando el trono caiga, yo ya llevaré la corona.',
   lines: [
     { type: 'PASSIVE', text: 'Si el Demonio muere y quedan 5+ jugadores vivos, te conviertes en el nuevo Demonio.' },

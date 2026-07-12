@@ -160,7 +160,7 @@ const definition: RoleDefinition = {
   id: 'fortune_teller',
   team: 'townsfolk',
   icon: 'eye',
-  nightOrder: 15,
+  nightOrder: 46, // After the Demon kill (Imp 30) so the read reflects post-kill state
   chaos: 40,
   shouldWake: (_game, player) => isAlive(player),
 

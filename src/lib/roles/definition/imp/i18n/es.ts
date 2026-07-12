@@ -2,6 +2,7 @@ const es = {
   name: 'Diablo',
   description:
     'Cada noche*, elige un jugador: muere. Si te matas a ti mismo, un Secuaz se convierte en el Diablo.',
+  ability: 'Cada noche*, elige un jugador: muere. Si te matas a ti mismo de esta forma, un Secuaz se convierte en el Diablo.',
   quote: 'No conquista. Simplemente perdura.',
   lines: [
     { type: 'NIGHT', text: 'Cada noche (excepto la primera), elige un jugador para matar.' },

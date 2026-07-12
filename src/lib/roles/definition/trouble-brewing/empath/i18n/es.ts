@@ -2,6 +2,7 @@ const es = {
   name: 'Empático',
   description:
     'Cada noche, descubres cuántos de tus 2 vecinos vivos son malvados.',
+  ability: 'Cada noche, descubres cuántos de tus 2 vecinos vivos son malvados.',
   quote: 'Siento el peso de sus pecados, incluso cuando sonríen.',
   lines: [
     { type: 'NIGHT', text: 'Cada noche, descubres cuántos de tus vecinos vivos son malvados.' },

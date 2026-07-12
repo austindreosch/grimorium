@@ -2,6 +2,7 @@ const es = {
   name: 'Espía',
   description:
     'Cada noche, puedes mirar el Grimorio. Podrías registrarte como bueno y como un Aldeano o Forastero, incluso estando muerto.',
+  ability: 'Cada noche, ves el Grimorio. Podrías registrarte como bueno y como un Aldeano o Forastero, incluso estando muerto.',
   quote: 'Sé lo que ellos saben. Simplemente no saben que yo lo sé.',
   lines: [
     { type: 'NIGHT', text: 'Cada noche, puedes mirar el Grimorio del Cuentacuentos.' },

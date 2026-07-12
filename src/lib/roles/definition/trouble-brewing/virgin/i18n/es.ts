@@ -2,6 +2,7 @@ const es = {
   name: 'Virgen',
   description:
     'La primera vez que eres nominado, si el nominador es un Aldeano, es ejecutado inmediatamente.',
+  ability: 'La primera vez que eres nominado, si el nominador es un Aldeano, es ejecutado inmediatamente.',
   quote: 'La inocencia es la hoja más afilada. Pero solo corta una vez.',
   lines: [
     { type: 'PASSIVE', text: 'La primera vez que te nominan, si el nominador es un Aldeano, es ejecutado inmediatamente.' },

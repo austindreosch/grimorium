@@ -1,6 +1,7 @@
 const en = {
   name: 'Poisoner',
   description: 'Each night, choose a player: they are poisoned tonight.',
+  ability: 'Each night, choose a player: they are poisoned tonight and tomorrow day.',
   quote: 'A little patience, a little powder. No one ever suspects the cook.',
   lines: [
     { type: 'NIGHT', text: 'Each night, choose a player to poison until the next dusk.' },

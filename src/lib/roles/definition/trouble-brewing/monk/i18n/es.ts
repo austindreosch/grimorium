@@ -2,6 +2,7 @@ const es = {
   name: 'Monje',
   description:
     'Cada noche*, elige un jugador (no tú mismo): está a salvo del Demonio esta noche.',
+  ability: 'Cada noche*, elige un jugador (no tú mismo): está a salvo del Demonio esta noche.',
   quote: 'En silencio hago vigilia, para que otros puedan despertar.',
   lines: [
     { type: 'NIGHT', text: 'Cada noche, elige un jugador para proteger del Demonio esta noche.' },

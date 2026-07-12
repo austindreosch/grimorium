@@ -100,7 +100,7 @@ export function NightDashboard({
     : null
 
   return (
-    <div className='min-h-app bg-gradient-to-b from-indigo-950 via-grimoire-purple to-grimoire-darker flex flex-col'>
+    <div className='min-h-app bg-gradient-to-b from-[#16213a] via-board-leather to-board-leather flex flex-col'>
       {/* Header */}
       <div className='bg-gradient-to-b from-indigo-900/50 to-transparent px-4 py-4'>
         <div className='max-w-lg mx-auto'>

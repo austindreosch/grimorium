@@ -45,7 +45,7 @@ const definition: RoleDefinition = {
   id: 'empath',
   team: 'townsfolk',
   icon: 'handHeart',
-  nightOrder: 14,
+  nightOrder: 45, // After the Demon kill (Imp 30) so counts read post-kill state
   chaos: 25,
   shouldWake: (_game, player) => isAlive(player),
 

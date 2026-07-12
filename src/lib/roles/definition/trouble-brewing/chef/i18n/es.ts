@@ -1,6 +1,7 @@
 const es = {
   name: 'Chef',
   description: 'Empiezas sabiendo cuántas parejas de jugadores malvados hay.',
+  ability: 'Empiezas sabiendo cuántas parejas de jugadores malvados hay.',
   quote: 'Demasiados cocineros arruinan el caldo. Pero un buen chef cuenta los cuchillos.',
   lines: [
     { type: 'NIGHT', text: 'En la primera noche, descubres cuántas parejas de jugadores malvados están sentados juntos.' },

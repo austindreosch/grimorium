@@ -2,6 +2,7 @@ const en = {
   name: 'Drunk',
   description:
     'You do not know you are the Drunk. You think you are a Townsfolk character, but you are not.',
+  ability: 'You do not know you are the Drunk. You think you are a Townsfolk character, but you are not.',
   quote: 'The warmest nights are the ones you can\'t quite remember.',
   lines: [
     { type: 'PASSIVE', text: 'You believe you are a Townsfolk. You are not.' },

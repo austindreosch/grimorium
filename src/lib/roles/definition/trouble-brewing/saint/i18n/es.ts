@@ -1,6 +1,7 @@
 const es = {
   name: 'Santo',
   description: 'Si mueres por ejecución, tu equipo pierde.',
+  ability: 'Si mueres por ejecución, tu equipo pierde.',
   quote: 'Ser mártir es humano. Causar la caída del pueblo es otra cosa.',
   lines: [
     { type: 'CAVEAT', text: 'Si te ejecutan, el mal gana.' },

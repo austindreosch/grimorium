@@ -2,6 +2,7 @@ const es = {
   name: 'Borracho',
   description:
     'No sabes que eres el Borracho. Crees que eres un personaje Aldeano, pero no lo eres.',
+  ability: 'No sabes que eres el Borracho. Crees que eres un personaje Aldeano, pero no lo eres.',
   quote: 'Las noches más cálidas son las que no puedes recordar del todo.',
   lines: [
     { type: 'PASSIVE', text: 'Crees que eres un Aldeano. No lo eres.' },

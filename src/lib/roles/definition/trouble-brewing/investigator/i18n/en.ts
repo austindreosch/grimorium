@@ -1,6 +1,7 @@
 const en = {
   name: 'Investigator',
   description: 'You start knowing that 1 of 2 players is a particular Minion.',
+  ability: 'You start knowing that 1 of 2 players is a particular Minion.',
   quote: 'Follow the money. Follow the whispers. Follow the fear.',
   lines: [
     { type: 'NIGHT', text: 'In the first night, you learn 2 players and 1 Minion role — one of those players holds that role.' },

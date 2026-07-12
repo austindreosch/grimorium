@@ -9,7 +9,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg',
+          'bg-board-ink text-parchment-100 border border-board-gold/25 hover:bg-[#2f2517] shadow-lg',
         primary:
           'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 shadow-lg',
         danger:
@@ -21,9 +21,9 @@ const buttonVariants = cva(
           'border border-white/30 bg-transparent text-white hover:bg-white/10',
         gold: 'bg-gradient-to-r from-mystic-gold to-mystic-bronze text-grimoire-dark font-tarot uppercase tracking-wider shadow-lg',
         night:
-          'bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-tarot uppercase tracking-wider shadow-lg',
+          'bg-gradient-to-r from-board-good to-[#213a56] text-white font-tarot uppercase tracking-wider shadow-lg',
         evil: 'bg-gradient-to-r from-red-700 to-red-900 text-white font-tarot uppercase tracking-wider shadow-lg',
-        dawn: 'bg-gradient-to-r from-indigo-600 to-purple-700 text-white font-tarot uppercase tracking-wider shadow-lg',
+        dawn: 'bg-gradient-to-r from-board-gold to-[#a5802d] text-board-leather font-tarot uppercase tracking-wider shadow-lg',
         ember:
           'bg-gradient-to-r from-amber-500 to-orange-600 text-grimoire-dark font-tarot uppercase tracking-wider shadow-lg',
         slayer:

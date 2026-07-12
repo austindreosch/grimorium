@@ -40,11 +40,14 @@ export default {
           crimson: '#8B0000',
           midnight: '#191970',
         },
-        // Dark theme colors
+        // Legacy dark-theme tokens, remapped onto the real-board leather so the
+        // whole app reads as the black-leather grimoire without touching every
+        // screen's className. ponytail: values are leather now, not their names —
+        // rename these to board.* in a later cleanup once each screen is swept.
         grimoire: {
-          dark: '#0D0D0D',
-          darker: '#080808',
-          purple: '#1A0A2E',
+          dark: '#0D0B08', // = board.leather (body + panels)
+          darker: '#060504', // near-black gradient floor
+          purple: '#1C140B', // warm leather-lit brown (was purple) — kills the mystic purple
           blood: '#2D0A0A',
         },
         // Real-board palette — black-leather grimoire + aged-parchment tokens,

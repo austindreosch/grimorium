@@ -2,6 +2,7 @@ const en = {
   name: 'Butler',
   description:
     'Each night, choose a player (not yourself): tomorrow, you may only vote if they are voting too.',
+  ability: 'Each night, choose a player (not yourself): tomorrow, you may only vote if they are voting too.',
   quote: 'I serve at the pleasure of my master. They say when I speak.',
   lines: [
     { type: 'NIGHT', text: 'Each night, choose a player to become your master for the day.' },

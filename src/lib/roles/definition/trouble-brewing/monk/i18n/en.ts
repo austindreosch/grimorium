@@ -2,6 +2,7 @@ const en = {
   name: 'Monk',
   description:
     'Each night*, choose a player (not yourself): they are safe from the Demon tonight.',
+  ability: 'Each night*, choose a player (not yourself): they are safe from the Demon tonight.',
   quote: 'In silence I keep vigil, so that others may wake.',
   lines: [
     { type: 'NIGHT', text: 'Each night, choose a player to protect from the Demon tonight.' },

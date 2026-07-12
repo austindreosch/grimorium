@@ -42,7 +42,7 @@ const definition: RoleDefinition = {
   id: 'butler',
   team: 'outsider',
   icon: 'conciergeBell',
-  nightOrder: 35, // Late — the Butler's choice doesn't interact with other night abilities
+  nightOrder: 48, // Late — after the Undertaker, matching official order
   chaos: 20,
 
   nightSteps: [

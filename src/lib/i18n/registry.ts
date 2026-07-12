@@ -107,6 +107,12 @@ export function getRoleQuote(roleId: string, lang: Language): string {
   return (getRoleTranslations(roleId, lang).quote as string) ?? ''
 }
 
+/** Get a role's verbatim official ability text (falls back to description). */
+export function getRoleAbility(roleId: string, lang: Language): string {
+  const t = getRoleTranslations(roleId, lang)
+  return (t.ability as string) ?? (t.description as string) ?? ''
+}
+
 /** Get a role's ability/condition lines for the given language. */
 export function getRoleLines(
   roleId: string,

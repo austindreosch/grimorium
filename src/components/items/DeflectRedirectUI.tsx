@@ -27,7 +27,7 @@ export function DeflectRedirectUI({
   )
 
   return (
-    <div className='min-h-app bg-gradient-to-b from-red-950 via-grimoire-purple to-grimoire-darker flex flex-col items-center justify-center p-6'>
+    <div className='min-h-app bg-gradient-to-b from-[#2a1210] via-board-leather to-board-leather flex flex-col items-center justify-center p-6'>
       <div className='max-w-sm w-full'>
         {/* Header */}
         <div className='text-center mb-6'>

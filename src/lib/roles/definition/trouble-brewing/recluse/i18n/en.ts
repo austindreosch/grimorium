@@ -2,6 +2,7 @@ const en = {
   name: 'Recluse',
   description:
     'You might register as evil & as a Minion or Demon, even if dead.',
+  ability: 'You might register as evil & as a Minion or Demon, even if dead.',
   quote: 'They avoid me. Perhaps they are right to.',
   lines: [
     { type: 'PASSIVE', text: 'You may register as evil, as a Minion, or as a Demon to other players.' },

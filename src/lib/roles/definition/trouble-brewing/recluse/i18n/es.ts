@@ -2,6 +2,7 @@ const es = {
   name: 'Recluso',
   description:
     'Podrías registrarte como malvado y como un Secuaz o Demonio, incluso estando muerto.',
+  ability: 'Podrías registrarte como malvado y como un Secuaz o Demonio, incluso estando muerto.',
   quote: 'Me evitan. Quizás tienen razón.',
   lines: [
     { type: 'PASSIVE', text: 'Puedes aparecer como malvado, como Secuaz o como Demonio ante otros.' },

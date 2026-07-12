@@ -2,6 +2,7 @@ const en = {
   name: 'Scarlet Woman',
   description:
     'If there are 5 or more players alive & the Demon dies, you become the Demon.',
+  ability: 'If there are 5 or more players alive & the Demon dies, you become the Demon. (Travellers don\'t count.)',
   quote: 'When the throne falls, I will already be wearing the crown.',
   lines: [
     { type: 'PASSIVE', text: 'If the Demon dies and 5+ players are alive, you become the new Demon.' },

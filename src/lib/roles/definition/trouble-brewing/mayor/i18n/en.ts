@@ -2,6 +2,7 @@ const en = {
   name: 'Mayor',
   description:
     'If only 3 players live & no execution occurs, your team wins. If you die at night, another player might die instead.',
+  ability: 'If only 3 players live & no execution occurs, your team wins. If you die at night, another player might die instead.',
   quote: 'The town endures because someone must hold the line.',
   lines: [
     { type: 'PASSIVE', text: 'If only 3 players live and no execution occurs, good wins.' },

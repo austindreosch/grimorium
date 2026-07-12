@@ -2,6 +2,7 @@ const es = {
   name: 'Adivino',
   description:
     'Cada noche, elige 2 jugadores: descubres si alguno es un Demonio. Hay un jugador bueno que se registra como Demonio para ti.',
+  ability: 'Cada noche, elige 2 jugadores: descubres si alguno es un Demonio. Hay un jugador bueno que se registra como Demonio para ti.',
   quote: 'Toda visión es verdadera. No toda visión es honesta.',
   lines: [
     { type: 'NIGHT', text: 'Cada noche, elige 2 jugadores: descubres si alguno de ellos es el Demonio.' },

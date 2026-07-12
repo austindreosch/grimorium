@@ -2,6 +2,7 @@ const en = {
   name: 'Slayer',
   description:
     'Once per game, during the day, publicly choose a player: if they are the Demon, they die.',
+  ability: 'Once per game, during the day, publicly choose a player: if they are the Demon, they die.',
   quote: 'One shot. Make it count.',
   lines: [
     { type: 'DAY', text: 'During the day, you can publicly shoot one player.' },

@@ -2,6 +2,7 @@ const en = {
   name: 'Fortune Teller',
   description:
     'Each night, choose 2 players: you learn if either is a Demon. There is a good player that registers as a Demon to you.',
+  ability: 'Each night, choose 2 players: you learn if either is a Demon. There is a good player that registers as a Demon to you.',
   quote: 'Every vision is true. Not every vision is honest.',
   lines: [
     { type: 'NIGHT', text: 'Each night, choose 2 players: you learn whether either of them is the Demon.' },

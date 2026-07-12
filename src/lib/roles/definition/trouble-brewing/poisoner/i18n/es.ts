@@ -1,6 +1,7 @@
 const es = {
   name: 'Envenenador',
   description: 'Cada noche, elige un jugador: está envenenado esta noche.',
+  ability: 'Cada noche, elige un jugador: está envenenado esta noche y mañana durante el día.',
   quote: 'Un poco de paciencia, un poco de polvo. Nadie sospecha del cocinero.',
   lines: [
     { type: 'NIGHT', text: 'Cada noche, elige un jugador para envenenar hasta el siguiente anochecer.' },

@@ -1,6 +1,7 @@
 const en = {
   name: 'Baron',
   description: 'There are extra Outsiders in play. [+2 Outsiders]',
+  ability: 'There are extra Outsiders in play. [+2 Outsiders]',
   quote: 'Corruption starts at the top. It trickles down from there.',
   lines: [
     { type: 'SETUP', text: 'Two extra Outsiders are added to the game, replacing Townsfolk.' },

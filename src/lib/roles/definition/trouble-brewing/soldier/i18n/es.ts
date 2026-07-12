@@ -1,6 +1,7 @@
 const es = {
   name: 'Soldado',
   description: 'Estás a salvo del Demonio.',
+  ability: 'Estás a salvo del Demonio.',
   quote: 'El escudo aguanta. Siempre aguanta.',
   lines: [
     { type: 'PASSIVE', text: 'El Demonio no puede matarte.' },

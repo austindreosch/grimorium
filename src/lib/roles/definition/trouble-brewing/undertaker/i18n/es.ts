@@ -1,6 +1,7 @@
 const es = {
   name: 'Enterrador',
   description: 'Cada noche*, descubres qué personaje murió por ejecución hoy.',
+  ability: 'Cada noche*, descubres qué personaje murió por ejecución hoy.',
   quote: 'Los muertos siempre dicen la verdad. Solo hay que saber dónde mirar.',
   lines: [
     { type: 'NIGHT', text: 'Si un jugador es ejecutado durante el día, descubrirás su rol en la noche siguiente.' },

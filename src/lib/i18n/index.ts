@@ -9,6 +9,7 @@ export {
   getRoleName,
   getRoleDescription,
   getRoleQuote,
+  getRoleAbility,
   getRoleLines,
   getEffectName,
   getEffectDescription,

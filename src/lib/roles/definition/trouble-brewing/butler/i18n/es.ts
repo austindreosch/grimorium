@@ -2,6 +2,7 @@ const es = {
   name: 'Mayordomo',
   description:
     'Cada noche, elige un jugador (no tú): mañana, solo puedes votar si ellos también están votando.',
+  ability: 'Cada noche, elige un jugador (no tú): mañana, solo puedes votar si ellos también están votando.',
   quote: 'Sirvo a voluntad de mi amo. Él decide cuándo puedo hablar.',
   lines: [
     { type: 'NIGHT', text: 'Cada noche, elige un jugador para que sea tu amo.' },

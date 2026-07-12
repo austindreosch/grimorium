@@ -2,6 +2,7 @@ const en = {
   name: 'Spy',
   description:
     'Each night, you may look at the Grimoire. You might register as good & as a Townsfolk or Outsider, even if you are dead.',
+  ability: 'Each night, you see the Grimoire. You might register as good & as a Townsfolk or Outsider, even if dead.',
   quote: 'I know what they know. They just don\'t know I know.',
   lines: [
     { type: 'NIGHT', text: 'Each night, you may look at the Storyteller\'s Grimoire.' },

@@ -2,6 +2,7 @@ const es = {
   name: 'Guardacuervos',
   description:
     'Si mueres de noche, te despiertan para elegir un jugador: descubres su personaje.',
+  ability: 'Si mueres de noche, te despiertan para elegir un jugador: descubres su personaje.',
   quote: 'Mi último aliento no será en vano. Alguien será nombrado.',
   lines: [
     { type: 'ON_DEATH', text: 'Si mueres de noche, despiertas para elegir cualquier jugador y descubrir su rol.' },

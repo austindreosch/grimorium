@@ -80,7 +80,7 @@ export function NightStepListLayout({
         'min-h-app flex flex-col bg-gradient-to-b',
         isEvil
           ? 'from-red-950 via-grimoire-blood to-grimoire-darker'
-          : 'from-indigo-950 via-grimoire-purple to-grimoire-darker',
+          : 'from-[#16213a] via-board-leather to-board-leather',
       )}
     >
       {/* Header */}

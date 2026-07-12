@@ -2,6 +2,7 @@ const en = {
   name: 'Virgin',
   description:
     'The 1st time you are nominated, if the nominator is a Townsfolk, they are executed immediately.',
+  ability: 'The 1st time you are nominated, if the nominator is a Townsfolk, they are executed immediately.',
   quote: 'Innocence is the sharpest blade. But it only cuts once.',
   lines: [
     { type: 'PASSIVE', text: 'The first time you are nominated, if the nominator is a Townsfolk, they are executed immediately.' },

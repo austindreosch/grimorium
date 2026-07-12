@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useDrag } from '@use-gesture/react'
 import { PlayerState, EffectInstance, isAlive } from '../../lib/types'
 import { RoleDefinition } from '../../lib/roles/types'
-import { getRoleDescription } from '../../lib/i18n/registry'
+import { getRoleAbility, getRoleDescription, getRoleName } from '../../lib/i18n/registry'
 import { ReminderDef } from '../../lib/reminders/catalog'
 import { IconName } from '../atoms/icon'
 import { Icon } from '../atoms'
@@ -134,7 +134,15 @@ export function BoardToken({
               team={role?.team ?? 'townsfolk'}
               size={Math.round(size * 0.9)}
             />
+            <p className='text-center font-tarot text-base uppercase tracking-wider text-board-ink'>
+              {getRoleName(player.roleId, language)}
+            </p>
+            {/* Official verbatim ability */}
             <p className='text-center font-read text-sm leading-snug text-board-ink'>
+              {getRoleAbility(player.roleId, language)}
+            </p>
+            {/* Plain-English paraphrase, kept alongside as a secondary note */}
+            <p className='text-center font-read text-xs italic leading-snug text-board-ink/60'>
               {getRoleDescription(player.roleId, language)}
             </p>
           </div>
