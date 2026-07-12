@@ -300,6 +300,13 @@ const en: Translations = {
       noReminders: 'No tokens',
       open: 'Board',
       unassignedSeat: 'Unassigned seat',
+      ability: 'Ability',
+      changeCharacter: 'Change Character',
+      allCharacters: 'All characters',
+      inPlay: 'In play',
+      addPlayer: 'Add player',
+      removePlayer: 'Remove player',
+      confirmRemove: 'Remove?',
     },
   },
 

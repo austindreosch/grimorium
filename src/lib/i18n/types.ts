@@ -303,6 +303,13 @@ export type Translations = {
       noReminders: string
       open: string
       unassignedSeat: string
+      ability: string
+      changeCharacter: string
+      allCharacters: string
+      inPlay: string
+      addPlayer: string
+      removePlayer: string
+      confirmRemove: string
     }
   }
 

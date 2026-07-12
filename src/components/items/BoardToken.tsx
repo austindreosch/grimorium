@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useDrag } from '@use-gesture/react'
 import { PlayerState, EffectInstance, isAlive } from '../../lib/types'
 import { isUnassigned } from '../../lib/unassigned'
@@ -32,6 +32,7 @@ type Props = {
   onTap: () => void
   onOpenLibrary: () => void
   onToggleDeath: () => void
+  onChangeCharacter: () => void
   onStartSpawn: (def: ReminderDef, e: React.PointerEvent) => void
   onStartMove: (instance: EffectInstance, e: React.PointerEvent) => void
   onReposition: (dx: number, dy: number) => void
@@ -57,6 +58,7 @@ export function BoardToken({
   onTap,
   onOpenLibrary,
   onToggleDeath,
+  onChangeCharacter,
   onStartSpawn,
   onStartMove,
   onReposition,
@@ -65,6 +67,7 @@ export function BoardToken({
   const [mode, setMode] = useState<'token' | 'info'>('token')
   const [showFan, setShowFan] = useState(false)
   const [drag, setDrag] = useState({ x: 0, y: 0 })
+  const discRef = useRef<HTMLDivElement>(null)
 
   const alive = isAlive(player)
   const hasReminders = characterReminders.length > 0
@@ -79,12 +82,20 @@ export function BoardToken({
     }
   }, [expanded])
 
-  // Cosmetic reposition: drag the disc to a custom spot; a tap expands instead.
+  // Disc gestures: drag = cosmetic reposition; tap on the upper half expands,
+  // tap on the lower/shroud half toggles life/death. filterTaps keeps a tap from
+  // firing mid-drag; the lower/upper split is decided at pointer-up from the
+  // pointer's Y vs the disc's mid-height (bounding-rect math), so it never fires
+  // during a reposition drag.
   const bindReposition = useDrag(
-    ({ tap, last, movement: [mx, my] }) => {
+    ({ tap, last, xy, movement: [mx, my] }) => {
       if (readOnly) return
       if (tap) {
-        onTap()
+        // ponytail: mid-height split heuristic. Lower half = shroud (life/death),
+        // upper half = expand. Tune the 0.5 threshold if the shroud feels off.
+        const rect = discRef.current?.getBoundingClientRect()
+        if (rect && xy[1] > rect.top + rect.height / 2) onToggleDeath()
+        else onTap()
         return
       }
       if (last) {
@@ -101,7 +112,9 @@ export function BoardToken({
   const pipSize = Math.round(size * 0.36)
   const orbit = size * 0.62
   const satOffset = size * 0.66
-  const satSize = Math.round(size * 0.34)
+  // Hit-target floor (B4): satellites stay tappable at 20-player density even as
+  // the art shrinks — overlap neighbours rather than drop below ~40px.
+  const satSize = Math.max(Math.round(size * 0.34), 40)
 
   return (
     <div
@@ -173,10 +186,12 @@ export function BoardToken({
             )
           })}
 
-          {/* The character token disc (drag = reposition, tap = expand) */}
+          {/* The character token disc. Drag = reposition; upper-half tap = expand;
+              lower/shroud-half tap = toggle life/death (see bindReposition). */}
           <div
+            ref={discRef}
             {...bindReposition()}
-            className='h-full w-full cursor-pointer'
+            className='relative h-full w-full cursor-pointer'
             style={{ touchAction: 'none' }}
           >
             <CharacterToken
@@ -187,6 +202,15 @@ export function BoardToken({
               dead={!alive}
               className={cn(expanded && 'ring-2 ring-board-gold/70')}
             />
+            {/* Persistent shroud fold line — makes the lower-half death-tap
+                discoverable on alive assigned tokens. */}
+            {alive && !unassigned && (
+              <div
+                aria-hidden
+                className='pointer-events-none absolute left-[16%] right-[16%] bg-black/15'
+                style={{ top: '62%', height: 1 }}
+              />
+            )}
           </div>
 
           {/* Satellite actions — only when expanded and interactive */}
@@ -198,6 +222,7 @@ export function BoardToken({
                   pos={{ x: 0, y: -satOffset }}
                   size={satSize}
                   tone='grey'
+                  ariaLabel={t.game.board.ability}
                   onClick={() => setMode('info')}
                 />
               )}
@@ -207,6 +232,7 @@ export function BoardToken({
                   pos={{ x: satOffset, y: 0 }}
                   size={satSize}
                   tone='orange'
+                  ariaLabel={t.game.board.characterReminders}
                   onClick={() => setShowFan((v) => !v)}
                 />
               )}
@@ -215,14 +241,18 @@ export function BoardToken({
                 pos={{ x: -satOffset, y: 0 }}
                 size={satSize}
                 tone='purple'
+                ariaLabel={t.game.board.allTokens}
                 onClick={onOpenLibrary}
               />
+              {/* South satellite is now Change Character; life/death moved to the
+                  shroud-half tap on the disc (B1/B3). */}
               <Satellite
-                icon={alive ? 'skull' : 'heart'}
+                icon='userPlus'
                 pos={{ x: 0, y: satOffset }}
                 size={satSize}
-                tone={alive ? 'red' : 'green'}
-                onClick={onToggleDeath}
+                tone='blue'
+                ariaLabel={t.game.board.changeCharacter}
+                onClick={onChangeCharacter}
               />
             </>
           )}
@@ -259,6 +289,7 @@ const TONE_CLASS: Record<string, string> = {
   purple: 'bg-purple-700 text-white',
   red: 'bg-board-evil text-white',
   green: 'bg-emerald-700 text-white',
+  blue: 'bg-board-good text-white',
 }
 
 function Satellite({
@@ -266,16 +297,19 @@ function Satellite({
   pos,
   size,
   tone,
+  ariaLabel,
   onClick,
 }: {
   icon: IconName
   pos: { x: number; y: number }
   size: number
   tone: keyof typeof TONE_CLASS
+  ariaLabel?: string
   onClick: () => void
 }) {
   return (
     <button
+      aria-label={ariaLabel}
       onClick={(e) => {
         e.stopPropagation()
         onClick()

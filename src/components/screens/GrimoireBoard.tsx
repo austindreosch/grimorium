@@ -1,17 +1,25 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Game, GameState, EffectInstance } from '../../lib/types'
 import { getRole } from '../../lib/roles'
+import { getInPlayRoleIds } from '../../lib/game'
+import { getScript, ScriptId } from '../../lib/scripts'
 import { getEffect } from '../../lib/effects'
 import { getBoardPositions, setBoardPositions } from '../../lib/storage'
 import { getCharacterReminders, getAllReminders, ReminderDef } from '../../lib/reminders/catalog'
 import { getEffectName } from '../../lib/i18n/registry'
-import { useI18n } from '../../lib/i18n'
+import { useI18n, interpolate } from '../../lib/i18n'
 import { filterVisibleEffects } from '../items/PlayerRoleIcon'
 import { BoardToken, PipView } from '../items/BoardToken'
 import { CharacterToken } from '../items/CharacterToken'
 import { ReminderToken } from '../items/ReminderToken'
+import { RolePickerGrid } from '../inputs/RolePickerGrid'
+import { isUnassigned } from '../../lib/unassigned'
 import { Icon } from '../atoms'
 import { IconName } from '../atoms/icon'
+import { cn } from '../../lib/utils'
+
+// Mirrors PlayerEntry's cap; Simple Mode boards top out at 20 seats.
+const MAX_PLAYERS = 20
 
 type Props = {
   game: Game
@@ -21,6 +29,9 @@ type Props = {
   onMovePip: (fromId: string, toId: string, instanceId: string) => void
   onRemovePip: (playerId: string, instanceId: string) => void
   onToggleDeath: (playerId: string) => void
+  onSetPlayerRole: (playerId: string, roleId: string) => void
+  onAddPlayer: () => void
+  onRemovePlayer: (playerId: string) => void
   onBack: () => void
 }
 
@@ -72,6 +83,9 @@ export function GrimoireBoard({
   onMovePip,
   onRemovePip,
   onToggleDeath,
+  onSetPlayerRole,
+  onAddPlayer,
+  onRemovePlayer,
   onBack,
 }: Props) {
   const { t, language } = useI18n()
@@ -83,9 +97,38 @@ export function GrimoireBoard({
   const [showBluffs, setShowBluffs] = useState(false)
   const [positions, setPositions] = useState(() => getBoardPositions(game.id))
   const [drag, setDrag] = useState<{ data: DragData; x: number; y: number } | null>(null)
+  // Change-Character picker: which seat is being reassigned, and whether the grid
+  // is showing the full script (vs the in-play bag, the default).
+  const [pickerFor, setPickerFor] = useState<string | null>(null)
+  const [pickerShowAll, setPickerShowAll] = useState(false)
+  // Two-tap remove confirm — local only, writes no history until the 2nd tap.
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null)
 
   const players = state.players
   const bluffs = useMemo(() => getDemonBluffs(game), [game])
+
+  const unassignedCount = useMemo(
+    () => players.filter((p) => isUnassigned(p.roleId)).length,
+    [players],
+  )
+
+  // Roles offered in the Change-Character picker: the in-play bag first, with a
+  // toggle to the full script. Both mapped to real RoleDefinitions.
+  const pickerRoles = useMemo(() => {
+    const ids = pickerShowAll
+      ? getScript(game.scriptId as ScriptId).roles
+      : getInPlayRoleIds(game)
+    return ids.map(getRole).filter((r): r is NonNullable<typeof r> => !!r)
+  }, [pickerShowAll, game])
+
+  const pickerCurrentRoleId = pickerFor
+    ? players.find((p) => p.id === pickerFor)?.roleId ?? ''
+    : ''
+
+  const closePicker = () => {
+    setPickerFor(null)
+    setPickerShowAll(false)
+  }
 
   // Measure the board so the circle scales to the viewport.
   useLayoutEffect(() => {
@@ -206,6 +249,7 @@ export function GrimoireBoard({
         onClick={() => {
           setExpandedId(null)
           setLibraryOpen(false)
+          setConfirmRemoveId(null)
         }}
       >
         {/* Centre drop zone — remove target while moving a pip */}
@@ -213,7 +257,9 @@ export function GrimoireBoard({
           data-dropzone='remove'
           className='pointer-events-none absolute left-1/2 top-1/2 flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border-2 border-dashed transition-opacity'
           style={{
-            opacity: dragging && drag?.data.kind === 'move' ? 1 : 0.12,
+            // Idle center belongs to the add-player cluster; the remove target
+            // only appears while a pip is being moved.
+            opacity: dragging && drag?.data.kind === 'move' ? 1 : 0,
             borderColor: '#C9A24B',
           }}
         >
@@ -239,12 +285,75 @@ export function GrimoireBoard({
                 onToggleDeath(player.id)
                 setExpandedId(null)
               }}
+              onChangeCharacter={() => {
+                setPickerFor(player.id)
+                setExpandedId(null)
+              }}
               onStartSpawn={(def, e) => startDrag({ kind: 'spawn', def }, e)}
               onStartMove={(instance, e) => startDrag({ kind: 'move', instance, fromId: player.id }, e)}
               onReposition={(dx, dy) => commitReposition(player.id, dx, dy)}
             />
           )
         })}
+
+        {/* Per-token remove (✕) — two-tap confirm, hidden while dragging pips. */}
+        {!readOnly && !dragging &&
+          layout.map(({ player, size, x, y }) => {
+            const confirming = confirmRemoveId === player.id
+            return (
+              <button
+                key={`rm-${player.id}`}
+                aria-label={confirming ? t.game.board.confirmRemove : t.game.board.removePlayer}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  if (confirming) {
+                    onRemovePlayer(player.id)
+                    setConfirmRemoveId(null)
+                  } else {
+                    setConfirmRemoveId(player.id)
+                  }
+                }}
+                className={cn(
+                  'absolute flex items-center justify-center rounded-full shadow-md transition-transform active:scale-90',
+                  confirming
+                    ? 'bg-board-evil text-white'
+                    : 'bg-board-ink/80 text-parchment-300/80',
+                )}
+                style={{
+                  left: x,
+                  top: y + size * 0.5 + 2,
+                  width: confirming ? 26 : 20,
+                  height: confirming ? 26 : 20,
+                  transform: 'translate(-50%, 0)',
+                  zIndex: 25,
+                }}
+              >
+                <Icon name={confirming ? 'trash' : 'x'} size='xs' />
+              </button>
+            )
+          })}
+
+        {/* Center cluster — add player + unassigned nudge (idle only). */}
+        {!readOnly && !dragging && (
+          <div className='pointer-events-none absolute left-1/2 top-1/2 z-20 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2'>
+            {unassignedCount > 0 && (
+              <span className='rounded-full bg-board-evil/90 px-3 py-1 font-body text-xs font-semibold text-white shadow'>
+                {interpolate(t.newGame.unassignedCount, { count: unassignedCount })}
+              </span>
+            )}
+            <button
+              onClick={onAddPlayer}
+              disabled={players.length >= MAX_PLAYERS}
+              aria-label={t.game.board.addPlayer}
+              className='pointer-events-auto flex items-center gap-1.5 rounded-full border border-board-gold/40 bg-board-ink/80 px-4 py-2 text-board-gold shadow-lg transition-transform active:scale-95 disabled:opacity-40'
+            >
+              <Icon name='plus' size='sm' />
+              <span className='font-body text-sm'>
+                {players.length}/{MAX_PLAYERS}
+              </span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Drag hint */}
@@ -307,6 +416,44 @@ export function GrimoireBoard({
                   {t.game.board.noReminders}
                 </p>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Character picker (blue) — reassign a seat's role */}
+      {pickerFor && (
+        <div className='absolute inset-0 z-50 flex flex-col bg-board-leather/95' onClick={closePicker}>
+          <div
+            className='m-3 mt-[max(0.75rem,env(safe-area-inset-top))] flex flex-1 flex-col overflow-hidden rounded-2xl border-2 border-board-good/70 bg-board-ink/90'
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className='flex items-center gap-2 border-b border-board-good/30 p-3'>
+              <Icon name='userPlus' size='sm' className='text-board-goodSoft' />
+              <span className='flex-1 font-tarot text-lg tracking-wide text-board-gold'>
+                {t.game.board.changeCharacter}
+              </span>
+              <button
+                onClick={() => setPickerShowAll((v) => !v)}
+                className='rounded-full border border-board-gold/30 px-3 py-1 font-body text-xs text-board-gold active:scale-95'
+              >
+                {pickerShowAll ? t.game.board.inPlay : t.game.board.allCharacters}
+              </button>
+              <button onClick={closePicker} className='text-parchment-300 active:scale-95'>
+                <Icon name='x' size='md' />
+              </button>
+            </div>
+            <div className='overflow-y-auto p-3'>
+              <RolePickerGrid
+                roles={pickerRoles}
+                state={state}
+                selected={pickerCurrentRoleId ? [pickerCurrentRoleId] : []}
+                onSelect={(roleId) => {
+                  onSetPlayerRole(pickerFor, roleId)
+                  closePicker()
+                }}
+                selectionCount={1}
+              />
             </div>
           </div>
         </div>

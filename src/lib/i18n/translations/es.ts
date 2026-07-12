@@ -302,6 +302,13 @@ const es: Translations = {
       noReminders: 'Sin fichas',
       open: 'Grimorio',
       unassignedSeat: 'Asiento sin asignar',
+      ability: 'Habilidad',
+      changeCharacter: 'Cambiar personaje',
+      allCharacters: 'Todos los personajes',
+      inPlay: 'En juego',
+      addPlayer: 'Añadir jugador',
+      removePlayer: 'Quitar jugador',
+      confirmRemove: '¿Quitar?',
     },
   },
 

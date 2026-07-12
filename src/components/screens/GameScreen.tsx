@@ -22,6 +22,9 @@ import {
   removeEffectInstance,
   moveEffectInstance,
   updateEffectData,
+  setPlayerRole,
+  addPlayer,
+  removePlayer,
   processAutoSkips,
   applySetupAction,
   getLastNightDeaths,
@@ -86,7 +89,8 @@ type Screen =
   | { type: 'game_over' }
   | { type: 'death_reveal'; deaths: DeathRevealEntry[]; next: Screen }
   | { type: 'grimoire_role_card'; playerId: string; returnTo: Screen }
-  | { type: 'grimoire_board'; returnTo: Screen }
+  // returnTo absent in Simple Mode, where the board is the whole game (back → main menu).
+  | { type: 'grimoire_board'; returnTo?: Screen }
 
 export function GameScreen({ initialGame, onMainMenu }: Props) {
   const { t } = useI18n()
@@ -553,7 +557,11 @@ export function GameScreen({ initialGame, onMainMenu }: Props) {
     }
     const pipelineResult = resolveIntent(intent, state, game)
     processPipelineResult(pipelineResult, game, (updatedGame) => {
-      const winner = checkWinCondition(getCurrentState(updatedGame), updatedGame)
+      // Simple Mode is manual — never auto-declare a winner; just stay on the board.
+      const winner =
+        game.mode === 'simple'
+          ? null
+          : checkWinCondition(getCurrentState(updatedGame), updatedGame)
       if (winner) {
         updateGame(endGame(updatedGame, winner))
         setScreen({ type: 'game_over' })
@@ -571,6 +579,19 @@ export function GameScreen({ initialGame, onMainMenu }: Props) {
 
   const handleRemovePip = (playerId: string, instanceId: string) => {
     updateGame(removeEffectInstance(game, playerId, instanceId))
+  }
+
+  // Board roster / assignment (Simple Mode manual controls).
+  const handleSetPlayerRole = (playerId: string, roleId: string) => {
+    updateGame(setPlayerRole(game, playerId, roleId))
+  }
+
+  const handleAddPlayer = () => {
+    updateGame(addPlayer(game, `${t.newGame.playerPlaceholder} ${state.players.length + 1}`))
+  }
+
+  const handleRemovePlayer = (playerId: string) => {
+    updateGame(removePlayer(game, playerId))
   }
 
   const handleShowRoleCard = (player: PlayerState) => {
@@ -809,7 +830,12 @@ export function GameScreen({ initialGame, onMainMenu }: Props) {
             onMovePip={handleMovePip}
             onRemovePip={handleRemovePip}
             onToggleDeath={handleToggleDeath}
-            onBack={() => setScreen(screen.returnTo)}
+            onSetPlayerRole={handleSetPlayerRole}
+            onAddPlayer={handleAddPlayer}
+            onRemovePlayer={handleRemovePlayer}
+            onBack={() =>
+              screen.returnTo ? setScreen(screen.returnTo) : onMainMenu()
+            }
           />
         )
 
@@ -937,6 +963,11 @@ function hasSetupActions(game: Game): boolean {
 
 function getInitialScreen(game: Game): Screen {
   const state = getCurrentState(game)
+
+  // Simple Mode is board-only — no guided phase flow. The board is the game.
+  if (game.mode === 'simple') {
+    return { type: 'grimoire_board' }
+  }
 
   // Check win conditions
   if (state.phase === 'ended') {
