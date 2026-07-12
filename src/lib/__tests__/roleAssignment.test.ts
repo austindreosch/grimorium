@@ -342,4 +342,30 @@ describe('resolveRoleAssignments', () => {
       expect(getRoleIds(result)).toEqual(['imp', 'villager'])
     })
   })
+
+  // ============================================================================
+  // DEAL GATE — a short bag cannot fill every seat (why the UI gate exists)
+  // ============================================================================
+
+  describe('deal gate (short bag)', () => {
+    it('drops a seat when the bag has fewer roles than players', () => {
+      // 3 roles for 5 players: resolveRoleAssignments cannot cover every seat,
+      // so a Simple-Mode deal of this bag would silently leave players roleless.
+      // This is exactly what RoleSelection's `totalRoles >= players.length` gate
+      // prevents before the deal step is ever reached.
+      const shortBag = ['imp', 'chef', 'monk']
+      const result = resolveRoleAssignments({
+        players: players5,
+        selectedRoles: shortBag,
+        manualAssignments: noManual,
+      })
+
+      // At least one seat is dropped rather than the bag being padded/duplicated.
+      expect(result.length).toBeLessThan(players5.length)
+      // No invented roles — every assignment came from the (short) bag.
+      for (const a of result) {
+        expect(shortBag).toContain(a.roleId)
+      }
+    })
+  })
 })
