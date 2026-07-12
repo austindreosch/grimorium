@@ -1,11 +1,11 @@
 import { ReactNode } from 'react'
-import { getTeam, TeamId } from '../../lib/teams'
+import { TeamId } from '../../lib/teams'
 import { cn } from '../../lib/utils'
 import { Icon } from '../atoms'
 import { IconName } from '../atoms/icon'
-import { MysticDivider } from './MysticDivider'
 import { CardShell } from './RoleCard/CardShell'
 import { CardIcon } from './RoleCard/CardIcon'
+import { TEAM_ACCENT, INK } from './RoleCard/boardAccent'
 
 // ─── OracleCard ──────────────────────────────────────────────────────────────
 
@@ -18,17 +18,10 @@ type OracleCardProps = {
 }
 
 /**
- * Tarot-style information card with team-specific visual flair.
- *
- * Shares the same animated card shell as `RoleCard` (summon animation,
- * 3D float, holographic shimmer, border glow, particles, decorative frames)
- * but displays ability results instead of role identity.
- *
- * The `teamId` drives all visual theming — pass it dynamically based on
- * the result (e.g., townsfolk for safe, minion/demon for danger) to make
- * the card atmosphere communicate the information.
- *
- * Wrap in a `TeamBackground` for the full immersive experience.
+ * Board-style information card — an aged-parchment face carrying an ability
+ * result (a count, a vision, a role). Shares the parchment shell with the
+ * role-reveal card; the team ink accent (blue = good, red = evil) lets the
+ * card's colour communicate the information at a glance.
  */
 export function OracleCard({
   icon,
@@ -37,38 +30,35 @@ export function OracleCard({
   subtitle,
   children,
 }: OracleCardProps) {
-  const team = getTeam(teamId)
+  const accent = TEAM_ACCENT[teamId]
 
   return (
-    <CardShell teamId={teamId} icon={icon}>
-      {/* Icon with arcane seal */}
+    <CardShell teamId={teamId}>
+      {/* Icon medallion */}
       <CardIcon icon={icon} teamId={teamId} />
 
       {/* Title */}
       <h1
-        className={cn(
-          'font-tarot text-xl sm:text-3xl font-bold text-center uppercase tracking-widest-xl mb-2',
-          team.colors.cardText,
-        )}
-        style={{ textShadow: team.colors.cardIconGlow }}
+        className='font-tarot text-xl sm:text-3xl font-bold text-center uppercase tracking-widest-xl mb-1.5'
+        style={{ color: INK }}
       >
         {title}
       </h1>
 
       {/* Subtitle (role name) */}
       <p
-        className={cn(
-          'text-center text-xs tracking-widest uppercase mb-3 sm:mb-6',
-          team.colors.cardTeamBadge,
-        )}
+        className='text-center text-[11px] tracking-[0.28em] uppercase font-semibold'
+        style={{ color: accent }}
       >
         {subtitle}
       </p>
 
-      {/* Divider — team-specific icon */}
-      <MysticDivider
-        icon={team.colors.cardDividerIcon}
-        iconClassName={cn(team.colors.cardWinAccent, 'opacity-50')}
+      {/* Divider */}
+      <div
+        className='mx-auto my-4 h-px w-16'
+        style={{
+          background: `linear-gradient(90deg, transparent, ${accent}88, transparent)`,
+        }}
       />
 
       {/* Result content */}
@@ -90,33 +80,24 @@ type NumberRevealProps = {
  * Used by Chef (evil pairs) and Empath (evil neighbors).
  */
 export function NumberReveal({ value, label, teamId }: NumberRevealProps) {
-  const team = getTeam(teamId)
+  const accent = TEAM_ACCENT[teamId]
 
   return (
     <div className='text-center py-2 sm:py-4'>
-      {/* Label */}
       <p
-        className={cn(
-          'text-sm tracking-wide mb-3 sm:mb-6 opacity-80',
-          team.colors.cardText,
-        )}
+        className='text-sm tracking-wide mb-4 font-read'
+        style={{ color: INK, opacity: 0.75 }}
       >
         {label}
       </p>
 
-      {/* Large number */}
       <div
-        className={cn(
-          'inline-flex items-center justify-center w-20 h-20 sm:w-28 sm:h-28 rounded-full',
-          team.colors.cardWinBg,
-        )}
+        className='inline-flex items-center justify-center w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-parchment-100'
+        style={{ boxShadow: `inset 0 0 10px rgba(60,40,20,0.4), 0 0 0 3px ${accent}33` }}
       >
         <span
-          className={cn(
-            'font-tarot text-5xl sm:text-7xl font-bold',
-            team.colors.cardWinAccent,
-          )}
-          style={{ textShadow: team.colors.cardIconGlow }}
+          className='font-tarot text-5xl sm:text-7xl font-bold'
+          style={{ color: accent }}
         >
           {value}
         </span>
@@ -144,25 +125,21 @@ export function VisionReveal({
   verdictIcon,
   teamId,
 }: VisionRevealProps) {
-  const team = getTeam(teamId)
+  const accent = TEAM_ACCENT[teamId]
 
   return (
     <div className='text-center py-2 sm:py-4'>
-      {/* Player name cards */}
-      <div className='space-y-2 mb-4 sm:mb-6'>
+      {/* Player name chips */}
+      <div className='space-y-2 mb-5'>
         {players.map((name, i) => (
           <div
             key={i}
-            className={cn(
-              'px-4 py-2.5 rounded-lg border text-center',
-              team.colors.cardWinBg,
-            )}
+            className='px-4 py-2.5 rounded-lg text-center bg-parchment-100'
+            style={{ border: `1px solid ${accent}44` }}
           >
             <span
-              className={cn(
-                'font-tarot text-lg tracking-wide uppercase',
-                team.colors.cardText,
-              )}
+              className='font-tarot text-lg tracking-wide uppercase'
+              style={{ color: INK }}
             >
               {name}
             </span>
@@ -172,17 +149,14 @@ export function VisionReveal({
 
       {/* Verdict */}
       <div className='flex flex-col items-center gap-2'>
-        <Icon
-          name={verdictIcon}
-          size='xl'
-          className={team.colors.cardWinAccent}
-        />
+        <span style={{ color: accent }}>
+          <Icon name={verdictIcon} size='xl' />
+        </span>
         <p
           className={cn(
             'font-tarot text-lg sm:text-xl uppercase tracking-wider leading-relaxed',
-            team.colors.cardText,
           )}
-          style={{ textShadow: team.colors.cardIconGlow }}
+          style={{ color: INK }}
         >
           {verdict}
         </p>

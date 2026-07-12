@@ -1,120 +1,47 @@
-import React, { ReactNode } from 'react'
-import { getTeam, TeamId } from '../../../lib/teams'
-import { cn } from '../../../lib/utils'
-import { Icon } from '../../atoms'
-import { IconName } from '../../atoms/icon'
-import { TownsfolkParticles, MinionParticles } from './CardParticles'
-
-// ─── Corner icon decorations ─────────────────────────────────────────────────
-
-const CORNER_POSITIONS = {
-  tl: 'top-3 left-3 sm:top-4 sm:left-4 -rotate-45',
-  tr: 'top-3 right-3 sm:top-4 sm:right-4 rotate-45',
-  bl: 'bottom-3 left-3 sm:bottom-4 sm:left-4 -rotate-[135deg]',
-  br: 'bottom-3 right-3 sm:bottom-4 sm:right-4 rotate-[135deg]',
-} as const
-
-function CornerIcon({
-  position,
-  icon,
-  className,
-}: {
-  position: keyof typeof CORNER_POSITIONS
-  icon: IconName
-  className?: string
-}) {
-  return (
-    <div
-      className={cn(
-        'absolute flex items-center justify-center text-mystic-gold/50',
-        CORNER_POSITIONS[position],
-      )}
-    >
-      <Icon name={icon} size='sm' className={className} />
-    </div>
-  )
-}
-
-// ─── Frame class resolver ────────────────────────────────────────────────────
-
-function getFrameClass(teamId: TeamId): string {
-  switch (teamId) {
-    case 'demon':
-      return 'card-frame-demon'
-    case 'minion':
-      return 'card-frame-minion'
-    case 'outsider':
-      return 'card-frame-outsider'
-    default:
-      return 'card-frame-townsfolk'
-  }
-}
+import { ReactNode } from 'react'
+import { TeamId } from '../../../lib/teams'
+import { PARCHMENT_TEXTURE } from '../../../lib/roles/art'
+import { TEAM_ACCENT, GOLD, INK } from './boardAccent'
 
 // ─── CardShell ───────────────────────────────────────────────────────────────
 
 type CardShellProps = {
   teamId: TeamId
-  icon: IconName
   children: ReactNode
 }
 
 /**
- * Shared card shell with team-themed visual flair.
+ * Shared board-style card shell — an aged-parchment face with a gilt hairline
+ * and a single team ink accent (townsfolk/outsider blue, minion/demon red),
+ * matching the physical grimoire's leather-and-parchment language.
  *
- * Provides the animated outer wrapper, holographic shimmer, border glow,
- * team-specific particles and frames, corner icons, and parchment-textured
- * content area.
- *
- * Used by both `RoleCard` (role reveals) and `OracleCard` (info reveals).
+ * Used by the info-reveal cards (OracleCard). The role-reveal card renders its
+ * own equivalent face.
  */
-export function CardShell({ teamId, icon, children }: CardShellProps) {
-  const team = getTeam(teamId)
+export function CardShell({ teamId, children }: CardShellProps) {
+  const accent = TEAM_ACCENT[teamId]
 
   return (
-    <div
-      className='animate-card-summon w-full max-w-sm mx-auto'
-      style={
-        {
-          '--glow-color': team.colors.cardGlow,
-          '--shimmer-color': team.colors.cardShimmer,
-        } as React.CSSProperties
-      }
-    >
+    <div className='animate-card-summon w-full max-w-sm mx-auto'>
       <div
-        className={cn(
-          'animate-card-float card-border-glow relative rounded-xl border-2 overflow-hidden aspect-[2.5/3.5] flex flex-col',
-          team.colors.cardBg,
-          team.colors.cardBorder,
-        )}
+        className='relative rounded-2xl overflow-hidden aspect-[2.5/3.5] flex flex-col p-[3px]'
+        style={{
+          background: `linear-gradient(160deg, ${accent}55, ${INK} 55%)`,
+          boxShadow: `0 12px 34px rgba(0,0,0,0.55), 0 0 0 1px ${GOLD}66`,
+        }}
       >
-        {/* Holographic foil shimmer overlay */}
-        <div className='card-shimmer' />
-
-        {/* Team-specific overlays */}
-        {teamId === 'demon' && <div className='card-scanlines' />}
-        {teamId === 'minion' && <MinionParticles />}
-        {teamId === 'townsfolk' && <TownsfolkParticles />}
-
-        {/* Inner decorative border — team-specific frame style */}
         <div
-          className={cn(
-            'absolute inset-3 sm:inset-4 rounded-lg pointer-events-none',
-            getFrameClass(teamId),
-          )}
-        />
-
-        {/* Corner Icons */}
-        {(['tl', 'tr', 'bl', 'br'] as const).map((pos) => (
-          <CornerIcon
-            key={pos}
-            position={pos}
-            icon={icon}
-            className={team.colors.accent}
+          className='relative flex-1 rounded-[13px] bg-parchment-200 bg-cover bg-center flex flex-col justify-center px-5 py-6 sm:px-7 sm:py-8'
+          style={{
+            backgroundImage: `url(${PARCHMENT_TEXTURE})`,
+            boxShadow: 'inset 0 0 18px rgba(60,40,20,0.35)',
+          }}
+        >
+          {/* Gilt inner frame */}
+          <div
+            className='pointer-events-none absolute inset-2 rounded-[10px]'
+            style={{ border: `1px solid ${accent}44` }}
           />
-        ))}
-
-        {/* Card Content */}
-        <div className='relative z-10 px-4 py-5 sm:px-8 sm:py-10 bg-parchment-texture flex-1 flex flex-col justify-center'>
           {children}
         </div>
       </div>
