@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import { getCharacterReminders, getAllReminders } from './catalog'
-import { makeState, makePlayer } from '../__tests__/helpers'
 
 describe('reminders catalog', () => {
   it('returns mechanical reminders with their effectType', () => {
@@ -14,19 +13,17 @@ describe('reminders catalog', () => {
     expect(getCharacterReminders('villager')).toEqual([])
   })
 
-  it('de-dupes shared labels and appends the generic markers last', () => {
-    const state = makeState({
-      players: [
-        makePlayer({ roleId: 'poisoner' }),
-        makePlayer({ roleId: 'washerwoman' }),
-      ],
-    })
-
-    const reminders = getAllReminders(state)
+  it('offers the whole catalog regardless of who is in play, de-duped, generics last', () => {
+    const reminders = getAllReminders()
     const labels = reminders.map((r) => r.label)
 
     // No duplicate labels
     expect(labels.length).toBe(new Set(labels).size)
+
+    // Full catalog, not filtered to in-play roles: reminders from characters
+    // that need not be seated are present (e.g. the Washerwoman's).
+    expect(labels).toContain('Townsfolk')
+    expect(labels).toContain('Poisoned')
 
     // Generic markers appended at the end, in order
     expect(labels.slice(-3)).toEqual(['Good', 'Evil', 'Custom'])

@@ -31,3 +31,7 @@ dev-dist
 
 TODO.md
 
+
+# Local env (cloud backup keys)
+.env
+.env.local

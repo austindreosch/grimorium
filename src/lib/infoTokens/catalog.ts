@@ -22,16 +22,16 @@ export type InfoTokenPreset = {
 // appending here + its { label, message } pair in en/es infoTokens.presets.
 export const INFO_TOKEN_PRESETS: InfoTokenPreset[] = [
   {
-    id: 'yourMinions',
-    category: 'evil',
-    getLabel: (t) => t.game.infoTokens.presets.yourMinions.label,
-    getDefaultMessage: (t) => t.game.infoTokens.presets.yourMinions.message,
-  },
-  {
     id: 'youAre',
     category: 'role',
     getLabel: (t) => t.game.infoTokens.presets.youAre.label,
     getDefaultMessage: (t) => t.game.infoTokens.presets.youAre.message,
+  },
+  {
+    id: 'yourMinions',
+    category: 'evil',
+    getLabel: (t) => t.game.infoTokens.presets.yourMinions.label,
+    getDefaultMessage: (t) => t.game.infoTokens.presets.yourMinions.message,
   },
   {
     id: 'theDemon',
@@ -46,10 +46,28 @@ export const INFO_TOKEN_PRESETS: InfoTokenPreset[] = [
     getDefaultMessage: (t) => t.game.infoTokens.presets.notInPlay.message,
   },
   {
-    id: 'direction',
+    id: 'oneOfThese',
+    category: 'role',
+    getLabel: (t) => t.game.infoTokens.presets.oneOfThese.label,
+    getDefaultMessage: (t) => t.game.infoTokens.presets.oneOfThese.message,
+  },
+  {
+    id: 'characterInPlay',
+    category: 'role',
+    getLabel: (t) => t.game.infoTokens.presets.characterInPlay.label,
+    getDefaultMessage: (t) => t.game.infoTokens.presets.characterInPlay.message,
+  },
+  {
+    id: 'selectedYou',
+    category: 'good',
+    getLabel: (t) => t.game.infoTokens.presets.selectedYou.label,
+    getDefaultMessage: (t) => t.game.infoTokens.presets.selectedYou.message,
+  },
+  {
+    id: 'thisPlayerIs',
     category: 'freeform',
-    getLabel: (t) => t.game.infoTokens.presets.direction.label,
-    getDefaultMessage: (t) => t.game.infoTokens.presets.direction.message,
+    getLabel: (t) => t.game.infoTokens.presets.thisPlayerIs.label,
+    getDefaultMessage: (t) => t.game.infoTokens.presets.thisPlayerIs.message,
   },
 ]
 

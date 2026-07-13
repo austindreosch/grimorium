@@ -27,6 +27,21 @@ import { Button, Icon, Badge, BackButton } from '../atoms'
 import { CharacterToken } from '../items/CharacterToken'
 import { ScreenFooter } from '../layouts/ScreenFooter'
 import { cn } from '../../lib/utils'
+import {
+  UsersThree,
+  UserMinus,
+  Sword,
+  Skull,
+  type Icon as PhosphorIcon,
+} from '@phosphor-icons/react'
+
+// Phosphor team glyphs for the footer distribution row.
+const TEAM_PHOSPHOR: Record<TeamId, PhosphorIcon> = {
+  townsfolk: UsersThree,
+  outsider: UserMinus,
+  minion: Sword,
+  demon: Skull,
+}
 
 type Props = {
   players: string[]
@@ -194,86 +209,47 @@ export function RoleSelection({ players, scriptId, onNext, onBack }: Props) {
 
   return (
     <div className='min-h-app bg-gradient-to-b from-grimoire-purple via-grimoire-dark to-grimoire-darker flex flex-col'>
-      {/* Header */}
-      <div className='sticky top-0 z-10 bg-grimoire-dark/95 backdrop-blur-sm border-b border-mystic-gold/20 px-4 py-3'>
-        <div className='flex items-center gap-3 max-w-3xl mx-auto'>
-          <BackButton onClick={onBack} />
-          <div className='flex-1'>
-            <h1 className='font-tarot text-lg text-parchment-100 tracking-wider uppercase'>
+      {/* Top bar: title + mode toggle (single row) */}
+      <div className='sticky top-0 z-10 bg-grimoire-dark/95 backdrop-blur-sm border-b border-mystic-gold/20'>
+        <div className='max-w-3xl mx-auto px-4'>
+          <div className='flex items-center gap-3 flex-wrap py-2.5'>
+            <BackButton onClick={onBack} />
+            <h1 className='font-tarot text-base sm:text-lg text-parchment-100 tracking-wider uppercase'>
               {t.newGame.step2Title}
             </h1>
-            <p className='text-xs text-parchment-500'>
-              {t.newGame.step2Subtitle}
-            </p>
+            {!isCustomMode && (
+              <div className='ml-auto flex rounded-lg bg-white/5 p-1 gap-1'>
+                <button
+                  type='button'
+                  onClick={() => setMode('generate')}
+                  className={cn(
+                    'flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium tracking-wide uppercase transition-all',
+                    mode === 'generate'
+                      ? 'bg-mystic-gold/20 text-mystic-gold shadow-sm border border-mystic-gold/30'
+                      : 'text-parchment-500 hover:text-parchment-300 border border-transparent',
+                  )}
+                >
+                  <Icon name='dices' size='sm' />
+                  {t.scripts.generate}
+                </button>
+                <button
+                  type='button'
+                  onClick={() => setMode('manual')}
+                  className={cn(
+                    'flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium tracking-wide uppercase transition-all',
+                    mode === 'manual'
+                      ? 'bg-mystic-gold/20 text-mystic-gold shadow-sm border border-mystic-gold/30'
+                      : 'text-parchment-500 hover:text-parchment-300 border border-transparent',
+                  )}
+                >
+                  <Icon name='settings' size='sm' />
+                  {t.scripts.manual}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
-
-      {/* Mode Switcher (script-based only) */}
-      {!isCustomMode && (
-        <div className='px-4 py-2.5 bg-white/[0.03] border-b border-white/10'>
-          <div className='max-w-3xl mx-auto'>
-            <div className='flex rounded-lg bg-white/5 p-1 gap-1'>
-              <button
-                type='button'
-                onClick={() => setMode('generate')}
-                className={cn(
-                  'flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-xs font-medium tracking-wide uppercase transition-all',
-                  mode === 'generate'
-                    ? 'bg-mystic-gold/20 text-mystic-gold shadow-sm border border-mystic-gold/30'
-                    : 'text-parchment-500 hover:text-parchment-300 border border-transparent',
-                )}
-              >
-                <Icon name='dices' size='sm' />
-                {t.scripts.generate}
-              </button>
-              <button
-                type='button'
-                onClick={() => setMode('manual')}
-                className={cn(
-                  'flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-xs font-medium tracking-wide uppercase transition-all',
-                  mode === 'manual'
-                    ? 'bg-mystic-gold/20 text-mystic-gold shadow-sm border border-mystic-gold/30'
-                    : 'text-parchment-500 hover:text-parchment-300 border border-transparent',
-                )}
-              >
-                <Icon name='settings' size='sm' />
-                {t.scripts.manual}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Distribution Tracker (manual mode) */}
-      {mode === 'manual' && recommended && (
-        <DistributionTracker
-          recommended={recommended}
-          teamCounts={teamCounts}
-        />
-      )}
-
-      {/* Warnings */}
-      {totalRoles > 0 && (totalRoles < players.length || impCount < 1) && (
-        <div className='px-4 py-2 bg-mystic-crimson/20 border-b border-red-500/30'>
-          <div className='max-w-3xl mx-auto space-y-1'>
-            {totalRoles < players.length && (
-              <div className='flex items-center gap-2 text-red-300 text-xs'>
-                <Icon name='alertTriangle' size='sm' />
-                {interpolate(t.newGame.needAtLeastRoles, {
-                  count: players.length,
-                })}
-              </div>
-            )}
-            {impCount < 1 && (
-              <div className='flex items-center gap-2 text-red-300 text-xs'>
-                <Icon name='alertTriangle' size='sm' />
-                {t.newGame.needAtLeastImp}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Content */}
       <div className='flex-1 overflow-y-auto relative'>
@@ -334,28 +310,25 @@ export function RoleSelection({ players, scriptId, onNext, onBack }: Props) {
               const current = teamCounts[teamId]
               const isMatch = current === target
               const isOver = current > target
+              const TeamIcon = TEAM_PHOSPHOR[teamId]
+              const stateColor = isMatch
+                ? 'text-green-400'
+                : isOver
+                  ? 'text-amber-400'
+                  : current > 0
+                    ? team.colors.text
+                    : 'text-parchment-500'
               return (
-                <div key={teamId} className='flex items-center gap-1'>
-                  <div
-                    className={cn(
-                      'w-2 h-2 rounded-full transition-all duration-300',
-                      isMatch
-                        ? 'bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.5)]'
-                        : isOver
-                          ? 'bg-amber-400'
-                          : current > 0
-                            ? team.colors.text.replace('text-', 'bg-')
-                            : 'bg-white/20',
-                    )}
+                <div key={teamId} className='flex items-center gap-1.5'>
+                  <TeamIcon
+                    size={18}
+                    weight='fill'
+                    className={cn('transition-colors', stateColor)}
                   />
                   <span
                     className={cn(
-                      'text-[10px] tabular-nums font-medium',
-                      isMatch
-                        ? 'text-green-400'
-                        : isOver
-                          ? 'text-amber-400'
-                          : 'text-parchment-500',
+                      'text-[11px] tabular-nums font-medium',
+                      stateColor,
                     )}
                   >
                     {current}/{target}
@@ -379,68 +352,6 @@ export function RoleSelection({ players, scriptId, onNext, onBack }: Props) {
           <Icon name='arrowRight' size='md' className='ml-1' />
         </Button>
       </ScreenFooter>
-    </div>
-  )
-}
-
-// ============================================================================
-// DISTRIBUTION TRACKER (compact, always visible in manual mode)
-// ============================================================================
-
-type DistributionTrackerProps = {
-  recommended: Record<TeamId, number>
-  teamCounts: Record<TeamId, number>
-}
-
-function DistributionTracker({
-  recommended,
-  teamCounts,
-}: DistributionTrackerProps) {
-  return (
-    <div className='bg-white/[0.03] border-b border-white/10'>
-      <div className='max-w-3xl mx-auto flex items-center justify-around py-2 px-4'>
-        {TEAM_ORDER.map((teamId) => {
-          const team = getTeam(teamId)
-          const target = recommended[teamId]
-          const current = teamCounts[teamId]
-          const isMatch = current === target
-          const isOver = current > target
-
-          return (
-            <div key={teamId} className='flex items-center gap-1.5'>
-              <Icon
-                name={team.icon}
-                size='sm'
-                className={cn(
-                  'transition-colors',
-                  isMatch
-                    ? 'text-green-400'
-                    : isOver
-                      ? 'text-amber-400'
-                      : team.colors.text,
-                )}
-              />
-              <span
-                className={cn(
-                  'text-sm font-bold tabular-nums transition-colors',
-                  isMatch
-                    ? 'text-green-400'
-                    : isOver
-                      ? 'text-amber-400'
-                      : current > 0
-                        ? 'text-parchment-200'
-                        : 'text-parchment-500',
-                )}
-              >
-                {current}/{target}
-              </span>
-              {isMatch && (
-                <Icon name='check' size='xs' className='text-green-400' />
-              )}
-            </div>
-          )
-        })}
-      </div>
     </div>
   )
 }
@@ -872,28 +783,13 @@ function RoleCard({
     <button
       type='button'
       onClick={onToggle}
-      className={cn(
-        'rounded-xl border-2 transition-all relative flex flex-col',
-        isSelected
-          ? cn(
-              team.colors.cardBorder,
-              'bg-gradient-to-b from-white/10 to-white/5',
-            )
-          : 'border-white/10 bg-white/5 hover:bg-white/[0.08]',
-      )}
-      style={
-        isSelected
-          ? {
-              boxShadow: `0 0 16px ${team.colors.cardGlow}, inset 0 1px 0 rgba(255,255,255,0.06)`,
-            }
-          : undefined
-      }
+      className='relative flex flex-col items-center rounded-lg p-2 transition-colors hover:bg-white/[0.03]'
     >
       {/* Card body */}
-      <div className='px-3 pt-4 pb-3 text-center flex-1'>
+      <div className='flex flex-col items-center text-center'>
         {/* Selected checkmark */}
         {isSelected && (
-          <div className='absolute top-2 right-2'>
+          <div className='absolute top-1 right-1'>
             <div
               className={cn(
                 'w-5 h-5 rounded-full flex items-center justify-center',
@@ -910,18 +806,21 @@ function RoleCard({
         )}
 
         {/* Real character-token art (locked "tokens are always real") */}
-        <div className='flex justify-center'>
-          <CharacterToken roleId={role.id} team={role.team} size={44} />
-        </div>
+        <CharacterToken
+          roleId={role.id}
+          team={role.team}
+          size={64}
+          className={cn(!isSelected && 'opacity-70')}
+        />
         <div
           className={cn(
-            'text-[11px] font-tarot tracking-wider uppercase mt-2',
+            'text-sm font-tarot tracking-wider uppercase mt-2',
             isSelected ? 'text-parchment-100' : 'text-parchment-300',
           )}
         >
           {getRoleName(role.id, language)}
         </div>
-        <p className='text-[11px] text-parchment-500 line-clamp-2 mt-1 leading-snug text-left'>
+        <p className='text-[11px] text-parchment-500 mt-1 leading-snug'>
           {desc}
         </p>
       </div>

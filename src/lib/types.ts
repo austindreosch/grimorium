@@ -75,6 +75,7 @@ export type EventType =
   | 'effect_removed'
   | 'player_added'
   | 'player_removed'
+  | 'player_renamed'
   | 'role_changed'
   | 'role_change_revealed'
   | 'setup_action'

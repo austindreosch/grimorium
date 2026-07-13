@@ -44,6 +44,10 @@ const TB_ART_BASES = new Set([
   'washerwoman',
 ])
 
+// Vite serves the app (and its public/ assets) under this base path.
+// Hardcoded absolute `/assets/...` URLs ignore it, so prefix every art URL.
+const BASE = import.meta.env.BASE_URL
+
 const GENERIC_BY_TEAM: Record<TeamId, string> = {
   townsfolk: 'townsfolk',
   outsider: 'outsider',
@@ -63,10 +67,10 @@ export function getRoleArt(roleId: string, team: TeamId): string {
   const tint = isEvilTeam(team) ? 'e' : 'g'
   const base = artBase(roleId)
   if (TB_ART_BASES.has(base)) {
-    return `/assets/characters/tb/${base}_${tint}.webp`
+    return `${BASE}assets/characters/tb/${base}_${tint}.webp`
   }
   const generic = GENERIC_BY_TEAM[team] ?? 'custom'
-  return `/assets/characters/generic/${generic}_${tint}.webp`
+  return `${BASE}assets/characters/generic/${generic}_${tint}.webp`
 }
 
 /** True if the role has official art (vs. a generic fallback). */
@@ -75,4 +79,7 @@ export function hasRoleArt(roleId: string): boolean {
 }
 
 /** Parchment token-back texture (the physical token look). */
-export const PARCHMENT_TEXTURE = '/assets/textures/pback.png'
+export const PARCHMENT_TEXTURE = `${BASE}assets/textures/pback.png`
+
+/** The black swallowtail shroud draped over a dead player's token. */
+export const SHROUD_TEXTURE = `${BASE}assets/textures/shroud.png`

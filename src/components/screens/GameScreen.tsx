@@ -25,6 +25,7 @@ import {
   setPlayerRole,
   addPlayer,
   removePlayer,
+  renamePlayer,
   processAutoSkips,
   applySetupAction,
   getLastNightDeaths,
@@ -47,7 +48,7 @@ import {
   NightFollowUpResult,
   DayActionResult,
 } from '../../lib/pipeline/types'
-import { saveGame } from '../../lib/storage'
+import { saveGame, addToRoster } from '../../lib/storage'
 import { useI18n } from '../../lib/i18n'
 import { RoleRevelationScreen } from './RoleRevelationScreen'
 import { NightDashboard } from './NightDashboard'
@@ -594,6 +595,12 @@ export function GameScreen({ initialGame, onMainMenu }: Props) {
     updateGame(removePlayer(game, playerId))
   }
 
+  // Rename a seat and remember the name in the account roster for tap-to-add.
+  const handleRenamePlayer = (playerId: string, name: string) => {
+    updateGame(renamePlayer(game, playerId, name))
+    addToRoster([name])
+  }
+
   const handleShowRoleCard = (player: PlayerState) => {
     setShowGrimoire(false)
     setScreen({
@@ -830,6 +837,7 @@ export function GameScreen({ initialGame, onMainMenu }: Props) {
             onSetPlayerRole={handleSetPlayerRole}
             onAddPlayer={handleAddPlayer}
             onRemovePlayer={handleRemovePlayer}
+            onRenamePlayer={handleRenamePlayer}
             onBack={() =>
               screen.returnTo ? setScreen(screen.returnTo) : onMainMenu()
             }

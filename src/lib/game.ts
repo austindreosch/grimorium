@@ -1177,6 +1177,26 @@ export function addPlayer(game: Game, name: string): Game {
 }
 
 /**
+ * Rename a seat (narrator board action). Cosmetic label only — no role/effect
+ * change. No-op if the seat is missing or the name is unchanged.
+ */
+export function renamePlayer(game: Game, playerId: string, name: string): Game {
+  const state = getCurrentState(game)
+  const player = state.players.find((p) => p.id === playerId)
+  if (!player || player.name === name) return game
+
+  return addHistoryEntry(
+    game,
+    {
+      type: 'player_renamed',
+      message: [{ type: 'i18n', key: 'history.playerRenamed', params: { name } }],
+      data: { playerId, name, previousName: player.name, source: 'narrator' },
+    },
+    { players: state.players.map((p) => (p.id === playerId ? { ...p, name } : p)) },
+  )
+}
+
+/**
  * Remove a seat (narrator board action). Drops the player from state (which drops
  * their own effects) and clears their persisted board position. Past history
  * entries referencing them are left intact — the event log is append-only, so

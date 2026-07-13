@@ -1,12 +1,19 @@
 import { useEffect, useState } from 'react'
 import { useDrag } from '@use-gesture/react'
+import {
+  BookmarkSimple,
+  Heart,
+  Info,
+  Leaf,
+  PencilSimple,
+  Swap,
+  type IconProps as PhosphorIconProps,
+} from '@phosphor-icons/react'
 import { PlayerState, EffectInstance, isAlive } from '../../lib/types'
 import { isUnassigned } from '../../lib/unassigned'
 import { RoleDefinition } from '../../lib/roles/types'
-import { getRoleAbility, getRoleDescription, getRoleName } from '../../lib/i18n/registry'
-import { ReminderDef } from '../../lib/reminders/catalog'
+import { getRoleAbility } from '../../lib/i18n/registry'
 import { IconName } from '../atoms/icon'
-import { Icon } from '../atoms'
 import { useI18n } from '../../lib/i18n'
 import { cn } from '../../lib/utils'
 import { CharacterToken } from './CharacterToken'
@@ -15,8 +22,9 @@ import { ReminderToken } from './ReminderToken'
 export type PipView = {
   instance: EffectInstance
   icon: IconName
+  iconSrc?: string
   label: string
-  tone: 'good' | 'evil' | 'neutral'
+  tone: 'good' | 'evil' | 'neutral' | 'reminder'
 }
 
 type Props = {
@@ -25,17 +33,28 @@ type Props = {
   size: number
   expanded: boolean
   readOnly?: boolean
-  characterReminders: ReminderDef[]
   pips: PipView[]
   /** Committed cosmetic offset for this seat (added by the board). */
   offset: { x: number; y: number }
+  boardCenter: { x: number; y: number }
+  reminderScale?: number
   onTap: () => void
   onOpenLibrary: () => void
   onToggleDeath: () => void
   onChangeCharacter: () => void
-  onStartSpawn: (def: ReminderDef, e: React.PointerEvent) => void
+  onEditName: () => void
   onStartMove: (instance: EffectInstance, e: React.PointerEvent) => void
   onReposition: (dx: number, dy: number) => void
+}
+
+type SatelliteTone = 'black' | 'white' | 'purple' | 'green' | 'blue'
+type SatelliteAction = {
+  Icon: React.ComponentType<PhosphorIconProps>
+  tone: SatelliteTone
+  weight?: PhosphorIconProps['weight']
+  ariaLabel: string
+  onClick: () => void
+  angle: number
 }
 
 /**
@@ -52,24 +71,23 @@ export function BoardToken({
   size,
   expanded,
   readOnly = false,
-  characterReminders,
   pips,
   offset,
+  boardCenter,
+  reminderScale = 0.74,
   onTap,
   onOpenLibrary,
   onToggleDeath,
   onChangeCharacter,
-  onStartSpawn,
+  onEditName,
   onStartMove,
   onReposition,
 }: Props) {
   const { t, language } = useI18n()
   const [mode, setMode] = useState<'token' | 'info'>('token')
-  const [showFan, setShowFan] = useState(false)
   const [drag, setDrag] = useState({ x: 0, y: 0 })
 
   const alive = isAlive(player)
-  const hasReminders = characterReminders.length > 0
   // An unassigned seat has no character, so no ability to flip to and reveal.
   const unassigned = isUnassigned(player.roleId)
 
@@ -77,7 +95,6 @@ export function BoardToken({
   useEffect(() => {
     if (!expanded) {
       setMode('token')
-      setShowFan(false)
     }
   }, [expanded])
 
@@ -102,12 +119,60 @@ export function BoardToken({
   )
 
   // Pip orbit geometry.
-  const pipSize = Math.round(size * 0.36)
-  const orbit = size * 0.62
-  const satOffset = size * 0.66
+  const pipSize = Math.round(size * reminderScale)
+  const orbit = size * 0.74
+  const satOffset = size * 0.56
   // Hit-target floor (B4): satellites stay tappable at 20-player density even as
-  // the art shrinks — overlap neighbours rather than drop below ~40px.
-  const satSize = Math.max(Math.round(size * 0.34), 40)
+  // the art shrinks — overlap neighbours rather than drop below ~36px.
+  const satSize = Math.max(Math.round(size * 0.28), 36)
+  // Fixed cardinal placement (screen coords, y-down): E = 0, S = π/2, W = π.
+  // Name-edit satellite — north on every seat; naming is the first thing a fresh
+  // (unassigned) seat needs, and a quick correction on an assigned one.
+  const nameSatellite: SatelliteAction = {
+    Icon: PencilSimple,
+    tone: 'white',
+    weight: 'bold',
+    ariaLabel: t.game.board.editName,
+    onClick: onEditName,
+    angle: -Math.PI / 2, // north
+  }
+  const satellites = unassigned
+    ? [
+        nameSatellite,
+        {
+          Icon: Swap,
+          tone: 'blue' as const,
+          weight: 'bold' as const,
+          ariaLabel: t.game.board.changeCharacter,
+          onClick: onChangeCharacter,
+          angle: 0, // east
+        },
+      ]
+    : ([
+        {
+          Icon: Info,
+          tone: 'white' as const,
+          ariaLabel: t.game.board.ability,
+          onClick: () => setMode('info'),
+          angle: Math.PI / 2, // south
+        },
+        {
+          Icon: Leaf,
+          tone: 'purple' as const,
+          ariaLabel: t.game.board.allTokens,
+          onClick: onOpenLibrary,
+          angle: 0, // east
+        },
+        {
+          Icon: alive ? BookmarkSimple : Heart,
+          tone: alive ? 'black' as const : 'green' as const,
+          weight: alive ? 'fill' as const : 'bold' as const,
+          ariaLabel: alive ? t.game.board.markDead : t.game.board.revive,
+          onClick: onToggleDeath,
+          angle: Math.PI, // west
+        },
+      ] as SatelliteAction[])
+  const infoOpensUp = offset.y > boardCenter.y
 
   return (
     <div
@@ -127,32 +192,39 @@ export function BoardToken({
       {/* Info card — the "flip the token over" ability view (never for a blank seat) */}
       {mode === 'info' && !unassigned ? (
         <div
-          className='absolute left-1/2 top-0 -translate-x-1/2 rounded-2xl border border-board-gold/40 bg-parchment-200 bg-cover p-3 pt-9 shadow-xl'
+          className={cn(
+            'absolute left-1/2 -translate-x-1/2 rounded-2xl border border-board-gold/40 bg-parchment-200 bg-cover p-3 pt-10 shadow-xl',
+            infoOpensUp ? 'bottom-0' : 'top-0',
+          )}
           style={{ width: Math.max(180, size * 2.1), zIndex: 40 }}
         >
-          <button
-            onClick={() => setMode('token')}
-            className='absolute left-1/2 top-2 flex h-7 w-7 -translate-x-1/2 items-center justify-center rounded-full bg-black text-white shadow-md active:scale-95'
-            aria-label={t.common.back}
-          >
-            <Icon name='arrowLeft' size='sm' />
-          </button>
+          <div className='absolute left-1/2 top-0 flex -translate-x-1/2 -translate-y-1/2 gap-2'>
+            <button
+              onClick={onChangeCharacter}
+              className='flex h-8 w-8 items-center justify-center rounded-full bg-board-good text-white shadow-md active:scale-95'
+              aria-label={t.game.board.changeCharacter}
+            >
+              <Swap size={18} weight='bold' />
+            </button>
+            <button
+              onClick={onEditName}
+              className='flex h-8 w-8 items-center justify-center rounded-full bg-white text-board-ink shadow-md active:scale-95'
+              aria-label={t.game.board.editName}
+            >
+              <PencilSimple size={18} weight='bold' />
+            </button>
+          </div>
           <div className='flex flex-col items-center gap-2'>
+            {/* The real character token (art only — its curved name is enough) */}
             <CharacterToken
               roleId={player.roleId}
               team={role?.team ?? 'townsfolk'}
+              name={player.name}
+              nameTone='card'
               size={Math.round(size * 0.9)}
             />
-            <p className='text-center font-tarot text-base uppercase tracking-wider text-board-ink'>
-              {getRoleName(player.roleId, language)}
-            </p>
-            {/* Official verbatim ability */}
-            <p className='text-center font-read text-sm leading-snug text-board-ink'>
+            <p className='text-center font-read text-base leading-snug text-board-ink'>
               {getRoleAbility(player.roleId, language)}
-            </p>
-            {/* Plain-English paraphrase, kept alongside as a secondary note */}
-            <p className='text-center font-read text-xs italic leading-snug text-board-ink/60'>
-              {getRoleDescription(player.roleId, language)}
             </p>
           </div>
         </div>
@@ -160,21 +232,29 @@ export function BoardToken({
         <>
           {/* Orbiting reminder pips */}
           {pips.map((pip, i) => {
-            const a = (i / pips.length) * Math.PI * 2 - Math.PI / 2
-            const px = size / 2 + Math.cos(a) * orbit - pipSize / 2
-            const py = size / 2 + Math.sin(a) * orbit - pipSize / 2
+            // Stack pips in a short line toward board center. ponytail: compact
+            // overlap beats a wide fan for the common 2-3 reminder case.
+            const baseAngle = Math.atan2(
+              boardCenter.y - offset.y,
+              boardCenter.x - offset.x,
+            )
+            const step = pipSize * 0.76
+            const distance = orbit + i * step
+            const px = size / 2 + Math.cos(baseAngle) * distance - pipSize / 2
+            const py = size / 2 + Math.sin(baseAngle) * distance - pipSize / 2
+            const pipLayer = 20 + Math.max(0, Math.min(9, Math.round(((size - py) / size) * 9)))
             return (
               <div
                 key={pip.instance.id}
                 className='absolute'
-                style={{ left: px, top: py, zIndex: 20, touchAction: 'none' }}
+                style={{ left: px, top: py, zIndex: pipLayer, touchAction: 'none' }}
                 onPointerDown={(e) => {
                   if (readOnly) return
                   e.stopPropagation()
                   onStartMove(pip.instance, e)
                 }}
               >
-                <ReminderToken icon={pip.icon} label={pip.label} tone={pip.tone} size={pipSize} />
+                <ReminderToken icon={pip.icon} iconSrc={pip.iconSrc} label={pip.label} tone={pip.tone} size={pipSize} />
               </div>
             )
           })}
@@ -185,7 +265,7 @@ export function BoardToken({
           <div
             {...bindReposition()}
             className='relative h-full w-full cursor-pointer'
-            style={{ touchAction: 'none' }}
+            style={{ zIndex: 40, touchAction: 'none' }}
           >
             <CharacterToken
               roleId={player.roleId}
@@ -193,135 +273,93 @@ export function BoardToken({
               name={player.name}
               size={size}
               dead={!alive}
-              className={cn(expanded && 'ring-2 ring-board-gold/70')}
+              className={cn(expanded && 'ring-2 ring-[#21152E]/80')}
             />
           </div>
 
           {/* Satellite actions — only when expanded and interactive */}
           {expanded && !readOnly && (
             <>
-              {!unassigned && (
-                <Satellite
-                  icon='info'
-                  pos={{ x: 0, y: -satOffset }}
-                  size={satSize}
-                  tone='grey'
-                  ariaLabel={t.game.board.ability}
-                  onClick={() => setMode('info')}
-                />
-              )}
-              {hasReminders && (
-                <Satellite
-                  icon='leaf'
-                  pos={{ x: satOffset, y: 0 }}
-                  size={satSize}
-                  tone='orange'
-                  ariaLabel={t.game.board.characterReminders}
-                  onClick={() => setShowFan((v) => !v)}
-                />
-              )}
-              <Satellite
-                icon='layoutGrid'
-                pos={{ x: -satOffset, y: 0 }}
-                size={satSize}
-                tone='purple'
-                ariaLabel={t.game.board.allTokens}
-                onClick={onOpenLibrary}
-              />
-              {/* South cardinal = Change Character. */}
-              <Satellite
-                icon='userPlus'
-                pos={{ x: 0, y: satOffset }}
-                size={satSize}
-                tone='blue'
-                ariaLabel={t.game.board.changeCharacter}
-                onClick={onChangeCharacter}
-              />
-              {/* Life/death — explicit skull (alive → kill) / heart (dead → revive)
-                  satellite at the SE diagonal, so an inspecting disc-tap never kills. */}
-              <Satellite
-                icon={alive ? 'skull' : 'heart'}
-                pos={{ x: satOffset * 0.72, y: satOffset * 0.72 }}
-                size={satSize}
-                tone={alive ? 'red' : 'green'}
-                ariaLabel={alive ? t.game.board.markDead : t.game.board.revive}
-                onClick={onToggleDeath}
-              />
+              {satellites.map((button) => {
+                return (
+                  <Satellite
+                    key={button.ariaLabel}
+                    Icon={button.Icon}
+                    pos={{
+                      x: Math.cos(button.angle) * satOffset,
+                      y: Math.sin(button.angle) * satOffset,
+                    }}
+                    size={satSize}
+                    tone={button.tone}
+                    weight={button.weight}
+                    ariaLabel={button.ariaLabel}
+                    onClick={button.onClick}
+                  />
+                )
+              })}
             </>
           )}
 
-          {/* Character-reminder fan (orange) — this role's own tokens */}
-          {expanded && showFan && (
-            <div
-              className='absolute left-full top-1/2 ml-2 flex -translate-y-1/2 gap-1.5'
-              style={{ zIndex: 35 }}
-            >
-              {characterReminders.map((def) => (
-                <div
-                  key={def.label}
-                  style={{ touchAction: 'none' }}
-                  onPointerDown={(e) => {
-                    e.stopPropagation()
-                    onStartSpawn(def, e)
-                  }}
-                >
-                  <ReminderToken icon={def.icon} label={def.label} tone='neutral' size={satSize + 4} />
-                </div>
-              ))}
-            </div>
-          )}
         </>
       )}
     </div>
   )
 }
 
-const TONE_CLASS: Record<string, string> = {
-  grey: 'bg-neutral-700 text-neutral-100',
-  orange: 'bg-orange-600 text-white',
+const TONE_CLASS: Record<SatelliteTone, string> = {
+  black: 'bg-black text-white',
+  white: 'bg-white text-black',
   purple: 'bg-purple-700 text-white',
-  red: 'bg-board-evil text-white',
   green: 'bg-emerald-700 text-white',
   blue: 'bg-board-good text-white',
 }
 
 function Satellite({
-  icon,
+  Icon,
   pos,
   size,
   tone,
+  weight = 'bold',
   ariaLabel,
   onClick,
 }: {
-  icon: IconName
+  Icon: React.ComponentType<PhosphorIconProps>
   pos: { x: number; y: number }
   size: number
   tone: keyof typeof TONE_CLASS
+  weight?: PhosphorIconProps['weight']
   ariaLabel?: string
   onClick: () => void
 }) {
+  // Centering lives on the wrapper; the popover-in animation drives the button's
+  // own transform. Keeping them on separate elements avoids the animation
+  // clobbering the -50%/-50% offset (which caused the disjoint-then-snap).
   return (
-    <button
-      aria-label={ariaLabel}
-      onClick={(e) => {
-        e.stopPropagation()
-        onClick()
-      }}
-      onPointerDown={(e) => e.stopPropagation()}
-      className={cn(
-        'absolute flex items-center justify-center rounded-full shadow-md transition-transform active:scale-90 animate-popover-in',
-        TONE_CLASS[tone],
-      )}
+    <div
+      className='absolute'
       style={{
-        width: size,
-        height: size,
         left: `calc(50% + ${pos.x}px)`,
         top: `calc(50% + ${pos.y}px)`,
         transform: 'translate(-50%, -50%)',
-        zIndex: 32,
+        // Above the disc (z-40) so satellites aren't hidden; pips stay below the disc.
+        zIndex: 50,
       }}
     >
-      <Icon name={icon} size='sm' />
-    </button>
+      <button
+        aria-label={ariaLabel}
+        onClick={(e) => {
+          e.stopPropagation()
+          onClick()
+        }}
+        onPointerDown={(e) => e.stopPropagation()}
+        className={cn(
+          'flex items-center justify-center rounded-full shadow-md transition-transform active:scale-90 animate-popover-in',
+          TONE_CLASS[tone],
+        )}
+        style={{ width: size, height: size }}
+      >
+        <Icon size={18} weight={weight} />
+      </button>
+    </div>
   )
 }

@@ -8,7 +8,7 @@ import {
   getRoleName,
   getRoleTranslations,
 } from '../../lib/i18n'
-import { RoleCard } from '../items/RoleCard'
+import { CharacterToken } from '../items/CharacterToken'
 import {
   TeamBackground,
 } from '../items/TeamBackground'
@@ -622,29 +622,40 @@ export function InfoRoleNightAction({ config, state, player, onComplete }: Props
   return (
     <PlayerFacingScreen playerName={player.name}>
       <TeamBackground teamId={shownTeamId}>
-        <div
-          className={`text-center text-sm mb-5 max-w-sm mx-auto ${shownTeam.isEvil ? 'text-red-300/80' : 'text-parchment-300/80'}`}
-        >
-          <p className='uppercase tracking-widest font-semibold mb-3'>
+        <div className='flex flex-col items-center text-center max-w-md mx-auto'>
+          <p
+            className={`uppercase tracking-widest text-sm font-semibold mb-6 ${shownTeam.isEvil ? 'text-red-300/80' : 'text-parchment-300/80'}`}
+          >
             {t.game.oneOfThemIsThe}
           </p>
-          <div className='flex items-center justify-center gap-2 flex-wrap'>
+
+          {/* The two candidate names — super big */}
+          <div className='flex flex-col items-center gap-1 mb-10'>
             {player1 && (
-              <span className='inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/20 text-base'>
-                <Icon name='user' size='sm' />
-                <span className='font-medium'>{player1.name}</span>
+              <span className='font-tarot text-5xl sm:text-6xl text-parchment-50 leading-tight'>
+                {player1.name}
+              </span>
+            )}
+            {player1 && player2 && (
+              <span className='text-parchment-400/70 text-lg uppercase tracking-widest my-1'>
+                {t.common.or}
               </span>
             )}
             {player2 && (
-              <span className='inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/20 text-base'>
-                <Icon name='user' size='sm' />
-                <span className='font-medium'>{player2.name}</span>
+              <span className='font-tarot text-5xl sm:text-6xl text-parchment-50 leading-tight'>
+                {player2.name}
               </span>
             )}
           </div>
-        </div>
 
-        <RoleCard roleId={selectedRoleId} />
+          {/* The role — token + name only */}
+          <CharacterToken roleId={selectedRoleId} team={shownTeamId} size={144} />
+          <span
+            className={`font-tarot text-3xl sm:text-4xl uppercase tracking-widest-xl mt-5 ${shownTeam.isEvil ? 'text-red-200' : 'text-parchment-100'}`}
+          >
+            {getLocalRoleName(selectedRoleId)}
+          </span>
+        </div>
 
         <HandbackCardLink onClick={handleComplete} isEvil={shownTeam.isEvil}>
           {t.common.continue}

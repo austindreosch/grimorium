@@ -1,47 +1,49 @@
 /* Self-hosted Blood on the Clocktower typeface set (see /public/assets/fonts).
    Dumbledor = token/display face; IM Fell English = flavor; EB Garamond =
-   reading body; Eudoxus Sans = functional UI. */
+   reading body; Eudoxus Sans = functional UI.
+   ponytail: paths hardcode the Vite `base` (/grimorium/) — CSS can't read
+   import.meta.env.BASE_URL. Update here if vite.config `base` ever changes. */
 @font-face {
   font-family: 'Dumbledor';
-  src: url('/assets/fonts/Dumbledor1.ttf') format('truetype');
+  src: url('/grimorium/assets/fonts/Dumbledor1.ttf') format('truetype');
   font-weight: normal;
   font-display: swap;
 }
 @font-face {
   font-family: 'IM Fell English';
-  src: url('/assets/fonts/IMFellEnglish-Regular.ttf') format('truetype');
+  src: url('/grimorium/assets/fonts/IMFellEnglish-Regular.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: 'IM Fell English';
-  src: url('/assets/fonts/IMFellEnglish-Italic.ttf') format('truetype');
+  src: url('/grimorium/assets/fonts/IMFellEnglish-Italic.ttf') format('truetype');
   font-weight: normal;
   font-style: italic;
   font-display: swap;
 }
 @font-face {
   font-family: 'EB Garamond';
-  src: url('/assets/fonts/EBGaramond.ttf') format('truetype');
+  src: url('/grimorium/assets/fonts/EBGaramond.ttf') format('truetype');
   font-weight: 400 700;
   font-display: swap;
 }
 @font-face {
   font-family: 'Eudoxus Sans';
-  src: url('/assets/fonts/EudoxusSans-Regular.ttf') format('truetype');
+  src: url('/grimorium/assets/fonts/EudoxusSans-Regular.ttf') format('truetype');
   font-weight: 400 600;
   font-display: swap;
 }
 @font-face {
   font-family: 'Eudoxus Sans';
-  src: url('/assets/fonts/EudoxusSans-Bold.ttf') format('truetype');
+  src: url('/grimorium/assets/fonts/EudoxusSans-Bold.ttf') format('truetype');
   font-weight: 700;
   font-display: swap;
 }
 @font-face {
   font-family: 'Cinzel';
-  src: url('/assets/fonts/Cinzel.ttf') format('truetype');
+  src: url('/grimorium/assets/fonts/Cinzel.ttf') format('truetype');
   font-weight: 400 700;
   font-display: swap;
 }

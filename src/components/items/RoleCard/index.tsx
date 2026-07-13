@@ -5,7 +5,6 @@ import {
   useI18n,
   interpolate,
   getRoleName as getRegistryRoleName,
-  getRoleQuote as getRegistryRoleQuote,
   getRoleLines as getRegistryRoleLines,
 } from '../../../lib/i18n'
 import { Icon, type IconName } from '../../atoms'
@@ -83,7 +82,6 @@ export function RoleCard({ roleId }: Props) {
 
   const teamName = t.teams[teamId]?.name ?? teamId
   const roleName = getRegistryRoleName(role.id, language)
-  const roleQuote = getRegistryRoleQuote(role.id, language)
   const roleLines = getRegistryRoleLines(role.id, language)
   const art = getRoleArt(role.id, teamId)
 
@@ -153,37 +151,27 @@ export function RoleCard({ roleId }: Props) {
 
           {/* Ability lines */}
           {roleLines.length > 0 && (
-            <div className='w-full space-y-2'>
+            <div className='w-full space-y-3'>
               {roleLines.map((line, i) => (
-                <div key={i} className='flex items-start gap-2'>
-                  <span className='shrink-0 mt-px' style={{ color: accent }}>
+                <div key={i} className='flex items-start gap-2.5'>
+                  <span className='shrink-0 mt-0.5' style={{ color: accent }}>
                     <Icon
                       name={LINE_TYPE_ICON[line.type] ?? 'circle'}
-                      size='sm'
+                      size='md'
                     />
                   </span>
                   <span
                     className={cn(
-                      'text-xs sm:text-sm leading-snug font-read',
+                      'text-base sm:text-lg leading-snug font-read',
                       line.type === 'WIN' && 'font-semibold',
                     )}
-                    style={{ color: INK, opacity: line.type === 'WIN' ? 1 : 0.82 }}
+                    style={{ color: INK }}
                   >
                     {line.text}
                   </span>
                 </div>
               ))}
             </div>
-          )}
-
-          {/* Flavour quote */}
-          {roleQuote && (
-            <p
-              className='mt-auto pt-4 text-center text-xs sm:text-sm italic leading-relaxed font-flavor'
-              style={{ color: INK, opacity: 0.55 }}
-            >
-              "{roleQuote}"
-            </p>
           )}
         </div>
       </div>

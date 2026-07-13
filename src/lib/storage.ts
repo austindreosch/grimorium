@@ -1,4 +1,5 @@
 import { Game } from './types'
+import { markDirtyAndSave } from './sync'
 
 const STORAGE_KEY = 'grimoire_games'
 const CURRENT_GAME_KEY = 'grimoire_current_game'
@@ -18,6 +19,20 @@ export function saveGame(game: Game): void {
   }
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(games))
+  markDirtyAndSave()
+}
+
+/**
+ * Merge cloud games into local without pushing back. Games are append-only
+ * event logs, so "more history wins"; ids not present locally are added.
+ */
+export function applyRemoteGames(remote: Game[]): void {
+  const byId = new Map(getAllGames().map((g) => [g.id, g]))
+  for (const rg of remote) {
+    const local = byId.get(rg.id)
+    if (!local || rg.history.length > local.history.length) byId.set(rg.id, rg)
+  }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify([...byId.values()]))
 }
 
 export function getAllGames(): Game[] {
@@ -39,6 +54,7 @@ export function getGame(gameId: string): Game | undefined {
 export function deleteGame(gameId: string): void {
   const games = getAllGames().filter((g) => g.id !== gameId)
   localStorage.setItem(STORAGE_KEY, JSON.stringify(games))
+  markDirtyAndSave()
 
   // Clear current game if it was deleted
   if (getCurrentGameId() === gameId) {
@@ -132,13 +148,12 @@ export function getRoster(): string[] {
   }
 }
 
-/** Merge names into the roster (case-insensitive dedupe), kept alphabetical. */
-export function addToRoster(names: string[]): void {
-  const existing = getRoster()
-  const seen = new Set(existing.map((n) => n.toLowerCase()))
-  const merged = [...existing]
+/** Case-insensitive union of two name lists, kept alphabetical. */
+function mergeNames(base: string[], incoming: string[]): string[] {
+  const seen = new Set(base.map((n) => n.toLowerCase()))
+  const merged = [...base]
 
-  for (const raw of names) {
+  for (const raw of incoming) {
     const name = raw.trim()
     if (name && !seen.has(name.toLowerCase())) {
       seen.add(name.toLowerCase())
@@ -147,7 +162,26 @@ export function addToRoster(names: string[]): void {
   }
 
   merged.sort((a, b) => a.localeCompare(b))
-  localStorage.setItem(ROSTER_KEY, JSON.stringify(merged))
+  return merged
+}
+
+/** Merge names into the roster (case-insensitive dedupe), kept alphabetical. */
+export function addToRoster(names: string[]): void {
+  localStorage.setItem(ROSTER_KEY, JSON.stringify(mergeNames(getRoster(), names)))
+  markDirtyAndSave()
+}
+
+/** Merge cloud roster into local without pushing back. */
+export function applyRemoteRoster(names: string[]): void {
+  localStorage.setItem(ROSTER_KEY, JSON.stringify(mergeNames(getRoster(), names)))
+}
+
+/** One-time backfill: seed the roster from every past game's players. */
+export function seedRosterFromGames(): void {
+  const names = getAllGames().flatMap(
+    (g) => g.history.at(-1)?.stateAfter?.players.map((p) => p.name) ?? [],
+  )
+  if (names.length > 0) addToRoster(names)
 }
 
 export function removeFromRoster(name: string): void {
@@ -155,6 +189,7 @@ export function removeFromRoster(name: string): void {
     (n) => n.toLowerCase() !== name.toLowerCase(),
   )
   localStorage.setItem(ROSTER_KEY, JSON.stringify(next))
+  markDirtyAndSave()
 }
 
 // ============================================================================

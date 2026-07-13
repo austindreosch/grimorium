@@ -1,7 +1,8 @@
 import { useId } from 'react'
 import { UserPlus } from 'lucide-react'
-import { getRoleArt, PARCHMENT_TEXTURE } from '../../lib/roles/art'
+import { getRoleArt, PARCHMENT_TEXTURE, SHROUD_TEXTURE } from '../../lib/roles/art'
 import { isUnassigned } from '../../lib/unassigned'
+import { getRoleName } from '../../lib/i18n/registry'
 import { useI18n } from '../../lib/i18n'
 import { TeamId } from '../../lib/teams'
 import { cn } from '../../lib/utils'
@@ -11,9 +12,11 @@ type Props = {
   team: TeamId
   /** Player name, curved along the bottom arc. Omit for an art-only token. */
   name?: string
+  nameTone?: 'board' | 'card'
   /** Token diameter in px. Board ~84, list/badge ~40, reveal ~160. */
   size?: number
   dead?: boolean
+  centerArt?: boolean
   onClick?: () => void
   className?: string
 }
@@ -27,35 +30,72 @@ export function CharacterToken({
   roleId,
   team,
   name,
+  nameTone = 'board',
   size = 84,
   dead = false,
+  centerArt = false,
   onClick,
   className,
 }: Props) {
-  const { t } = useI18n()
+  const { t, language } = useI18n()
   const id = useId()
   const Tag = onClick ? 'button' : 'div'
+  const nameIsCard = nameTone === 'card'
 
-  // Curved name along the bottom arc — shared by the assigned + blank renders.
+  // Player name — smaller and curved above the disc.
   const nameArc = name ? (
+    <svg
+      viewBox='0 0 180 18'
+      className='pointer-events-none absolute bottom-full left-1/2 h-[22%] -translate-x-1/2 overflow-visible'
+      style={{ width: Math.max(size * 1.75, name.length * 13) }}
+      aria-hidden
+    >
+      <defs>
+        <path id={`name-arc-${id}`} d='M 8 14 Q 90 6 172 14' fill='none' />
+      </defs>
+      <text
+        fill={nameIsCard ? '#17110B' : '#F4EFE6'}
+        className='font-body font-bold uppercase'
+        style={{
+          fontSize: 12,
+          letterSpacing: '1.2px',
+          textShadow: nameIsCard ? 'none' : '0 1px 3px rgba(0,0,0,0.85)',
+        }}
+      >
+        <textPath href={`#name-arc-${id}`} startOffset='50%' textAnchor='middle'>
+          {name}
+        </textPath>
+      </text>
+    </svg>
+  ) : null
+
+  // Character name curved along the bottom arc — only on assigned tokens.
+  const roleName = isUnassigned(roleId) ? '' : getRoleName(roleId, language)
+  const roleLetterSpacing = 2.2
+  const roleTextWidth =
+    roleName.length * 20 * 0.58 + Math.max(0, roleName.length - 1) * roleLetterSpacing
+  const fittedRoleWidth = roleTextWidth > 136 ? 136 : undefined
+  const roleArc = name && roleName ? (
     <svg
       viewBox='0 0 100 100'
       className='absolute inset-0 h-full w-full overflow-visible'
       aria-hidden
     >
       <defs>
-        <path id={`arc-${id}`} d='M 15 55 A 35 35 0 0 0 85 55' fill='none' />
+        <path id={`arc-${id}`} d='M 4 48 A 46 46 0 0 0 96 48' fill='none' />
       </defs>
       <text
         fill='#3A2A15'
         className='font-token uppercase'
+        lengthAdjust={fittedRoleWidth ? 'spacingAndGlyphs' : undefined}
+        textLength={fittedRoleWidth}
         style={{
-          fontSize: name.length > 9 ? 8 : 10,
-          letterSpacing: '0.5px',
+          fontSize: 20,
+          letterSpacing: `${roleLetterSpacing}px`,
         }}
       >
         <textPath href={`#arc-${id}`} startOffset='50%' textAnchor='middle'>
-          {name}
+          {roleName}
         </textPath>
       </text>
     </svg>
@@ -122,19 +162,29 @@ export function CharacterToken({
           'absolute rounded-full object-contain',
           dead && 'opacity-70 saturate-50',
         )}
-        style={{ inset: '8%', width: '84%', height: '84%' }}
+        style={centerArt
+          ? { top: '8%', left: '8%', width: '84%', height: '84%' }
+          : { top: '-5%', left: '8%', width: '84%', height: '84%' }}
       />
 
-      {/* Curved name along the bottom arc */}
+      {/* Character name curved along the bottom arc */}
+      {roleArc}
+
+      {/* Player name curved above the disc */}
       {nameArc}
 
-      {/* Shroud — draped over the top of a dead player's token */}
+      {/* Shroud — the real black swallowtail cloth draped over a dead token */}
       {dead && (
-        <div
-          className='pointer-events-none absolute inset-0 rounded-full'
+        <img
+          src={SHROUD_TEXTURE}
+          alt=''
+          draggable={false}
+          aria-hidden
+          className='pointer-events-none absolute left-1/2 -translate-x-1/2'
           style={{
-            background:
-              'linear-gradient(180deg, rgba(15,15,18,0.82) 0%, rgba(20,20,24,0.6) 45%, rgba(20,20,24,0.15) 75%, transparent 100%)',
+            top: '-6%',
+            width: '52%',
+            filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.5))',
           }}
         />
       )}

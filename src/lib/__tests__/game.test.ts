@@ -18,6 +18,7 @@ import {
   setPlayerRole,
   addPlayer,
   removePlayer,
+  renamePlayer,
   getInPlayRoleIds,
   buildInitialEffects,
 } from '../game'
@@ -722,6 +723,26 @@ describe('addPlayer', () => {
     expect(players[1].roleId).toBe('')
     expect(players[1].effects).toEqual([])
     expect(after.history.at(-1)!.type).toBe('player_added')
+  })
+})
+
+describe('renamePlayer', () => {
+  it('changes the seat name and logs a player_renamed entry', () => {
+    const game = createGame('T', 'trouble-brewing', [
+      { name: 'Player 1', roleId: 'imp' },
+    ])
+    const id = getCurrentState(game).players[0].id
+    const after = renamePlayer(game, id, 'Austin')
+    expect(getCurrentState(after).players[0].name).toBe('Austin')
+    expect(after.history.at(-1)!.type).toBe('player_renamed')
+  })
+
+  it('is a no-op when the name is unchanged', () => {
+    const game = createGame('T', 'trouble-brewing', [
+      { name: 'Austin', roleId: 'imp' },
+    ])
+    const id = getCurrentState(game).players[0].id
+    expect(renamePlayer(game, id, 'Austin')).toBe(game)
   })
 })
 

@@ -1,11 +1,17 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { CaretLeft, HandEye, UsersThree } from '@phosphor-icons/react'
 import { Game, GameState, EffectInstance } from '../../lib/types'
 import { getRole } from '../../lib/roles'
 import { getInPlayRoleIds } from '../../lib/game'
 import { getScript, ScriptId } from '../../lib/scripts'
 import { getEffect } from '../../lib/effects'
-import { getBoardPositions, setBoardPositions } from '../../lib/storage'
-import { getCharacterReminders, getAllReminders, ReminderDef } from '../../lib/reminders/catalog'
+import { getBoardPositions, setBoardPositions, getRoster } from '../../lib/storage'
+import {
+  getAllReminders,
+  getReminderByEffectType,
+  getReminderIconSrc,
+  ReminderDef,
+} from '../../lib/reminders/catalog'
 import { getEffectName } from '../../lib/i18n/registry'
 import { useI18n, interpolate } from '../../lib/i18n'
 import { filterVisibleEffects } from '../items/PlayerRoleIcon'
@@ -22,6 +28,15 @@ import { cn } from '../../lib/utils'
 
 // Mirrors PlayerEntry's cap; Simple Mode boards top out at 20 seats.
 const MAX_PLAYERS = 20
+const HIDDEN_BOARD_PIP_EFFECTS = new Set([
+  'deflect',
+  'demon_successor',
+  'martyrdom',
+  'misregister',
+  'pure',
+  'slayer_bullet',
+  'used_dead_vote',
+])
 
 type Props = {
   game: Game
@@ -34,36 +49,53 @@ type Props = {
   onSetPlayerRole: (playerId: string, roleId: string) => void
   onAddPlayer: () => void
   onRemovePlayer: (playerId: string) => void
+  onRenamePlayer: (playerId: string, name: string) => void
   onBack: () => void
 }
 
-type DragData =
-  | { kind: 'spawn'; def: ReminderDef }
-  | { kind: 'move'; instance: EffectInstance; fromId: string }
+// Only existing pips are dragged (to reposition or delete). Placing a *new*
+// token is a tap-to-hold / tap-a-player flow, not a drag — see pendingToken.
+type DragData = { instance: EffectInstance; fromId: string }
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
 
+// Radius (px) of the centre delete target. A moved pip is only removed when
+// released within this of board centre — matching the visible dashed circle —
+// so a drop anywhere else on the board just cancels instead of deleting.
+const REMOVE_RADIUS = 48
+
 /** The reminder pips shown around a player, from their visible effects. */
 function pipsFor(effects: EffectInstance[], language: string): PipView[] {
-  return filterVisibleEffects(effects).map((instance) => {
-    if (instance.type === 'reminder') {
-      const data = instance.data as { label?: string; icon?: IconName } | undefined
+  return filterVisibleEffects(effects)
+    .filter((instance) => !HIDDEN_BOARD_PIP_EFFECTS.has(instance.type))
+    .filter((instance) => !(instance.type === 'safe' && instance.expiresAt === 'never'))
+    .map((instance) => {
+      if (instance.type === 'reminder') {
+        const data = instance.data as {
+          label?: string
+          icon?: IconName
+          iconSrc?: string
+          tone?: PipView['tone']
+        } | undefined
+        return {
+          instance,
+          icon: (data?.icon ?? 'circleDot') as IconName,
+          iconSrc: data?.iconSrc,
+          label: data?.label ?? '',
+          tone: data?.tone ?? 'reminder',
+        }
+      }
+      const reminder = getReminderByEffectType(instance.type as Parameters<typeof getReminderByEffectType>[0])
+      const def = getEffect(instance.type)
+      const tone = def?.defaultType === 'nerf' ? 'evil' : def?.defaultType === 'buff' ? 'good' : 'neutral'
       return {
         instance,
-        icon: (data?.icon ?? 'circleDot') as IconName,
-        label: data?.label ?? '',
-        tone: 'neutral' as const,
+        icon: reminder?.icon ?? ((def?.icon ?? 'circleDot') as IconName),
+        iconSrc: reminder ? getReminderIconSrc(reminder) : undefined,
+        label: reminder?.label ?? getEffectName(instance.type, language as 'en' | 'es'),
+        tone: reminder?.tone ?? tone,
       }
-    }
-    const def = getEffect(instance.type)
-    const tone = def?.defaultType === 'nerf' ? 'evil' : def?.defaultType === 'buff' ? 'good' : 'neutral'
-    return {
-      instance,
-      icon: (def?.icon ?? 'circleDot') as IconName,
-      label: getEffectName(instance.type, language as 'en' | 'es'),
-      tone,
-    }
-  })
+    })
 }
 
 /** Read the Imp's recorded first-night demon bluffs, if any. */
@@ -88,23 +120,30 @@ export function GrimoireBoard({
   onSetPlayerRole,
   onAddPlayer,
   onRemovePlayer,
+  onRenamePlayer,
   onBack,
 }: Props) {
   const { t, language } = useI18n()
   const containerRef = useRef<HTMLDivElement>(null)
   const [dim, setDim] = useState({ w: 0, h: 0 })
   const [expandedId, setExpandedId] = useState<string | null>(null)
-  const [libraryOpen, setLibraryOpen] = useState(false)
+  // The seat whose "add token" button opened the tray. Tapping a token drops it
+  // straight onto this player — no rules, any token on any character. null =
+  // tray closed.
+  const [libraryFor, setLibraryFor] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [showBluffs, setShowBluffs] = useState(false)
   const [positions, setPositions] = useState(() => getBoardPositions(game.id))
-  const [drag, setDrag] = useState<{ data: DragData; x: number; y: number } | null>(null)
+  const [drag, setDrag] = useState<{ data: DragData; x: number; y: number; startX: number; startY: number } | null>(null)
   // Change-Character picker: which seat is being reassigned, and whether the grid
   // is showing the full script (vs the in-play bag, the default).
   const [pickerFor, setPickerFor] = useState<string | null>(null)
   const [pickerShowAll, setPickerShowAll] = useState(false)
   // Two-tap remove confirm — local only, writes no history until the 2nd tap.
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null)
+  // Name editor: which seat is being named, plus the working text field value.
+  const [renameFor, setRenameFor] = useState<string | null>(null)
+  const [nameInput, setNameInput] = useState('')
   // Right-rail reference panel currently open (null = plain board view).
   const [activePanel, setActivePanel] = useState<'script' | 'nightOrder' | null>(null)
   // Info Token flow (player-facing card library/editor) — full-screen takeover.
@@ -144,6 +183,22 @@ export function GrimoireBoard({
     setPickerShowAll(false)
   }
 
+  // Saved account roster — read fresh each time the name editor opens.
+  const roster = useMemo(() => getRoster(), [renameFor])
+
+  const openRename = (playerId: string) => {
+    const current = players.find((p) => p.id === playerId)?.name ?? ''
+    setNameInput(current)
+    setRenameFor(playerId)
+    setExpandedId(null)
+  }
+  const closeRename = () => setRenameFor(null)
+  const commitRename = (name: string) => {
+    const trimmed = name.trim()
+    if (renameFor && trimmed) onRenamePlayer(renameFor, trimmed)
+    closeRename()
+  }
+
   // Measure the board so the circle scales to the viewport.
   useLayoutEffect(() => {
     const el = containerRef.current
@@ -161,7 +216,10 @@ export function GrimoireBoard({
     const min = Math.min(dim.w, dim.h)
     const radius = min * 0.37
     const chord = n > 1 ? 2 * radius * Math.sin(Math.PI / n) : radius
-    const size = clamp(Math.round(chord * 0.82), 44, 92)
+    const baseSize = clamp(Math.round(chord * 0.82), 44, 92)
+    const scale = 1 + clamp((MAX_PLAYERS - n) / (MAX_PLAYERS - 1), 0, 1) * 0.35
+    const size = Math.round(baseSize * scale)
+    const reminderScale = 0.78 * clamp(min / 900, 0.72, 1)
     return players.map((p, i) => {
       const angle = -Math.PI / 2 + (i / n) * Math.PI * 2
       const base = {
@@ -169,7 +227,7 @@ export function GrimoireBoard({
         y: dim.h / 2 + Math.sin(angle) * radius,
       }
       const off = positions[p.id] ?? { x: 0, y: 0 }
-      return { player: p, size, x: base.x + off.x, y: base.y + off.y }
+      return { player: p, size, reminderScale, x: base.x + off.x, y: base.y + off.y }
     })
   }, [players, dim, positions])
 
@@ -184,8 +242,23 @@ export function GrimoireBoard({
 
   const startDrag = (data: DragData, e: React.PointerEvent) => {
     setExpandedId(null)
-    setLibraryOpen(false)
-    setDrag({ data, x: e.clientX, y: e.clientY })
+    setLibraryFor(null)
+    setDrag({ data, x: e.clientX, y: e.clientY, startX: e.clientX, startY: e.clientY })
+  }
+
+  // Place a chosen token on the seat the tray was opened for, then close it.
+  const placeToken = (def: ReminderDef) => {
+    const playerId = libraryFor
+    if (!playerId) return
+    if (def.effectType) onAddEffect(playerId, def.effectType)
+    else
+      onAddEffect(playerId, 'reminder', {
+        label: def.label,
+        icon: def.icon,
+        iconSrc: getReminderIconSrc(def),
+        tone: def.tone,
+      })
+    setLibraryFor(null)
   }
 
   // Global pointer tracking while a pip is in flight. The drag payload is
@@ -198,21 +271,21 @@ export function GrimoireBoard({
     const up = (e: PointerEvent) => {
       const el = document.elementFromPoint(e.clientX, e.clientY)
       const seat = el?.closest('[data-seat-id]')?.getAttribute('data-seat-id') ?? null
-      const overRemove = !!el?.closest('[data-dropzone="remove"]')
-      if (data.kind === 'spawn') {
-        if (seat && !overRemove) {
-          const { def } = data
-          if (def.effectType) onAddEffect(seat, def.effectType)
-          else onAddEffect(seat, 'reminder', { label: def.label, icon: def.icon })
-        }
-      } else {
-        const { instance, fromId } = data
-        if (seat && seat !== fromId && !overRemove) {
-          onMovePip(fromId, seat, instance.id)
-        } else if (overRemove || !seat) {
-          onRemovePip(fromId, instance.id)
-        }
+      // Delete only when released on the centre target — measured by distance to
+      // board centre, not a whole-board fallback. A drop in empty space cancels.
+      const rect = containerRef.current?.getBoundingClientRect()
+      const overRemove = !!rect &&
+        Math.hypot(
+          e.clientX - (rect.left + rect.width / 2),
+          e.clientY - (rect.top + rect.height / 2),
+        ) <= REMOVE_RADIUS
+      const { instance, fromId } = data
+      if (overRemove) {
+        onRemovePip(fromId, instance.id)
+      } else if (seat && seat !== fromId) {
+        onMovePip(fromId, seat, instance.id)
       }
+      // else: released in empty space → cancel, pip stays put.
       setDrag(null)
     }
     window.addEventListener('pointermove', move)
@@ -223,7 +296,7 @@ export function GrimoireBoard({
     }
   }, [drag !== null]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const allReminders = useMemo(() => getAllReminders(state), [state])
+  const allReminders = useMemo(() => getAllReminders(), [])
   const filteredReminders = useMemo(
     () => allReminders.filter((r) => r.label.toLowerCase().includes(search.toLowerCase())),
     [allReminders, search],
@@ -232,30 +305,17 @@ export function GrimoireBoard({
   const dragging = drag !== null
 
   return (
-    <div className='fixed inset-0 z-40 flex flex-col bg-board-leather'>
-      {/* Top bar — navigation lives in the right rail; keep the title + bluffs */}
-      <div className='flex items-center justify-between px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2 pr-14'>
-        <h2 className='font-tarot text-xl text-board-gold'>{t.game.board.title}</h2>
-        {bluffs && !readOnly ? (
-          <button
-            onClick={() => setShowBluffs(true)}
-            className='flex h-10 items-center gap-1.5 rounded-full border border-board-gold/30 bg-board-ink/70 px-3 text-board-gold active:scale-95'
-          >
-            <Icon name='drama' size='sm' />
-            <span className='font-body text-sm'>{t.game.board.demonBluffs}</span>
-          </button>
-        ) : (
-          <div className='w-10' />
-        )}
-      </div>
-
+    <div className='fixed inset-0 z-40 flex flex-col bg-[#6f6484]'>
       {/* Board surface */}
       <div
         ref={containerRef}
-        className='relative flex-1 overflow-hidden'
+        className={cn(
+          'relative flex-1 overflow-hidden bg-[#6f6484]',
+          activePanel && 'md:mr-[376px]',
+        )}
         onClick={() => {
           setExpandedId(null)
-          setLibraryOpen(false)
+          setLibraryFor(null)
           setConfirmRemoveId(null)
         }}
       >
@@ -266,14 +326,14 @@ export function GrimoireBoard({
           style={{
             // Idle center belongs to the add-player cluster; the remove target
             // only appears while a pip is being moved.
-            opacity: dragging && drag?.data.kind === 'move' ? 1 : 0,
+            opacity: dragging ? 1 : 0,
             borderColor: '#C9A24B',
           }}
         >
           <Icon name='trash' size='md' className='text-board-gold/80' />
         </div>
 
-        {layout.map(({ player, size, x, y }) => {
+        {layout.map(({ player, size, reminderScale, x, y }) => {
           const role = getRole(player.roleId)
           return (
             <BoardToken
@@ -283,11 +343,12 @@ export function GrimoireBoard({
               size={size}
               expanded={expandedId === player.id}
               readOnly={readOnly}
-              characterReminders={getCharacterReminders(player.roleId)}
               pips={pipsFor(player.effects, language)}
               offset={{ x, y }}
+              boardCenter={{ x: dim.w / 2, y: dim.h / 2 }}
+              reminderScale={reminderScale}
               onTap={() => setExpandedId((cur) => (cur === player.id ? null : player.id))}
-              onOpenLibrary={() => setLibraryOpen(true)}
+              onOpenLibrary={() => setLibraryFor(player.id)}
               onToggleDeath={() => {
                 onToggleDeath(player.id)
                 setExpandedId(null)
@@ -296,8 +357,8 @@ export function GrimoireBoard({
                 setPickerFor(player.id)
                 setExpandedId(null)
               }}
-              onStartSpawn={(def, e) => startDrag({ kind: 'spawn', def }, e)}
-              onStartMove={(instance, e) => startDrag({ kind: 'move', instance, fromId: player.id }, e)}
+              onEditName={() => openRename(player.id)}
+              onStartMove={(instance, e) => startDrag({ instance, fromId: player.id }, e)}
               onReposition={(dx, dy) => commitReposition(player.id, dx, dy)}
             />
           )
@@ -363,13 +424,6 @@ export function GrimoireBoard({
         )}
       </div>
 
-      {/* Drag hint */}
-      {editable && (
-        <p className='px-4 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1 text-center font-body text-xs text-parchment-400/70'>
-          {t.game.board.dragHint}
-        </p>
-      )}
-
       {/* Drag ghost */}
       {drag && (
         <div
@@ -377,18 +431,20 @@ export function GrimoireBoard({
           style={{ left: drag.x, top: drag.y, transform: 'translate(-50%, -50%)' }}
         >
           <ReminderToken
-            icon={drag.data.kind === 'spawn' ? drag.data.def.icon : pipsFor([drag.data.instance], language)[0]?.icon ?? 'circleDot'}
-            label={drag.data.kind === 'spawn' ? drag.data.def.label : pipsFor([drag.data.instance], language)[0]?.label ?? ''}
-            size={52}
+            icon={pipsFor([drag.data.instance], language)[0]?.icon ?? 'circleDot'}
+            iconSrc={pipsFor([drag.data.instance], language)[0]?.iconSrc}
+            label={pipsFor([drag.data.instance], language)[0]?.label ?? ''}
+            tone={pipsFor([drag.data.instance], language)[0]?.tone ?? 'reminder'}
+            size={64}
           />
         </div>
       )}
 
-      {/* Full library panel (purple) */}
-      {libraryOpen && (
-        <div className='absolute inset-0 z-[60] flex flex-col bg-board-leather/95' onClick={() => setLibraryOpen(false)}>
+      {/* Token library tray (purple) — opened for one seat; tap a token to place */}
+      {libraryFor && (
+        <div className='absolute inset-0 z-[60]' onClick={() => setLibraryFor(null)}>
           <div
-            className='m-3 mt-[max(0.75rem,env(safe-area-inset-top))] flex flex-1 flex-col overflow-hidden rounded-2xl border-2 border-purple-600/70 bg-board-ink/80'
+            className='absolute right-16 top-[max(0.75rem,env(safe-area-inset-top))] flex max-h-[min(25rem,calc(100vh-2rem))] w-[min(30rem,calc(100vw-5rem))] flex-col overflow-hidden rounded-2xl border-2 border-purple-600/70 bg-board-ink/95 shadow-2xl'
             onClick={(e) => e.stopPropagation()}
           >
             <div className='flex items-center gap-2 border-b border-purple-600/30 p-3'>
@@ -400,23 +456,28 @@ export function GrimoireBoard({
                 placeholder={t.game.board.search}
                 className='flex-1 bg-transparent font-body text-parchment-100 outline-none placeholder:text-parchment-400/60'
               />
-              <button onClick={() => setLibraryOpen(false)} className='text-parchment-300 active:scale-95'>
+              <button onClick={() => setLibraryFor(null)} className='text-parchment-300 active:scale-95'>
                 <Icon name='x' size='md' />
               </button>
             </div>
             <div className='grid grid-cols-4 content-start gap-3 overflow-y-auto p-4 sm:grid-cols-5'>
               {filteredReminders.map((def) => (
-                <div
+                <button
                   key={def.label}
-                  className='flex justify-center'
-                  style={{ touchAction: 'none' }}
-                  onPointerDown={(e) => {
+                  className='flex justify-center active:scale-95'
+                  onClick={(e) => {
                     e.stopPropagation()
-                    startDrag({ kind: 'spawn', def }, e)
+                    placeToken(def)
                   }}
                 >
-                  <ReminderToken icon={def.icon} label={def.label} size={56} />
-                </div>
+                  <ReminderToken
+                    icon={def.icon}
+                    iconSrc={getReminderIconSrc(def)}
+                    label={def.label}
+                    tone={def.tone}
+                    size={72}
+                  />
+                </button>
               ))}
               {filteredReminders.length === 0 && (
                 <p className='col-span-full py-8 text-center font-body text-parchment-400'>
@@ -430,23 +491,23 @@ export function GrimoireBoard({
 
       {/* Change Character picker (blue) — reassign a seat's role */}
       {pickerFor && (
-        <div className='absolute inset-0 z-[60] flex flex-col bg-board-leather/95' onClick={closePicker}>
+        <div className='absolute inset-0 z-[60]' onClick={closePicker}>
           <div
-            className='m-3 mt-[max(0.75rem,env(safe-area-inset-top))] flex flex-1 flex-col overflow-hidden rounded-2xl border-2 border-board-good/70 bg-board-ink/90'
+            className='absolute right-16 top-[max(0.75rem,env(safe-area-inset-top))] flex max-h-[min(42rem,calc(100vh-2rem))] w-[min(30rem,calc(100vw-5rem))] flex-col overflow-hidden rounded-2xl border-2 border-purple-600/70 bg-[#f5ecd5] shadow-2xl'
             onClick={(e) => e.stopPropagation()}
           >
-            <div className='flex items-center gap-2 border-b border-board-good/30 p-3'>
-              <Icon name='userPlus' size='sm' className='text-board-goodSoft' />
-              <span className='flex-1 font-tarot text-lg tracking-wide text-board-gold'>
+            <div className='flex items-center gap-2 border-b border-board-ink/15 p-3'>
+              <Icon name='userPlus' size='sm' className='text-board-ink/70' />
+              <span className='flex-1 font-body text-board-ink'>
                 {t.game.board.changeCharacter}
               </span>
               <button
                 onClick={() => setPickerShowAll((v) => !v)}
-                className='rounded-full border border-board-gold/30 px-3 py-1 font-body text-xs text-board-gold active:scale-95'
+                className='rounded-full border border-board-ink/15 bg-board-ink/5 px-3 py-1 font-body text-xs text-board-ink/70 active:scale-95'
               >
                 {pickerShowAll ? t.game.board.inPlay : t.game.board.allCharacters}
               </button>
-              <button onClick={closePicker} className='text-parchment-300 active:scale-95'>
+              <button onClick={closePicker} className='text-board-ink/60 active:scale-95'>
                 <Icon name='x' size='md' />
               </button>
             </div>
@@ -460,8 +521,62 @@ export function GrimoireBoard({
                   closePicker()
                 }}
                 selectionCount={1}
+                variant='cards'
+                surface='light'
               />
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Name editor (gold) — type a name or tap a saved one from the roster */}
+      {renameFor && (
+        <div className='absolute inset-0 z-[60]' onClick={closeRename}>
+          <div
+            className='absolute right-16 top-[max(0.75rem,env(safe-area-inset-top))] flex max-h-[min(25rem,calc(100vh-2rem))] w-[min(24rem,calc(100vw-5rem))] flex-col overflow-hidden rounded-2xl border-2 border-board-gold/60 bg-board-ink/95 shadow-2xl'
+            onClick={(e) => e.stopPropagation()}
+          >
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                commitRename(nameInput)
+              }}
+              className='flex items-center gap-2 border-b border-board-gold/25 p-3'
+            >
+              <Icon name='userPlus' size='sm' className='text-board-gold' />
+              <input
+                autoFocus
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                onFocus={(e) => e.target.select()}
+                placeholder={t.game.board.namePlaceholder}
+                className='flex-1 bg-transparent font-body text-parchment-100 outline-none placeholder:text-parchment-400/60'
+              />
+              <button
+                type='submit'
+                className='rounded-full border border-board-gold/40 px-3 py-1 font-body text-xs text-board-gold active:scale-95'
+              >
+                {t.game.board.save}
+              </button>
+            </form>
+            {roster.length > 0 && (
+              <div className='overflow-y-auto p-3'>
+                <p className='mb-2 px-1 font-body text-xs uppercase tracking-wide text-parchment-400/70'>
+                  {t.game.board.savedNames}
+                </p>
+                <div className='flex flex-wrap gap-2'>
+                  {roster.map((name) => (
+                    <button
+                      key={name}
+                      onClick={() => commitRename(name)}
+                      className='rounded-full border border-board-gold/25 bg-board-leather/40 px-3 py-1.5 font-body text-sm text-parchment-100 active:scale-95'
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -516,51 +631,60 @@ export function GrimoireBoard({
       {infoTokenOpen && !readOnly && (
         <InfoTokenCard
           state={state}
-          inPlayRoleIds={inPlayRoleIds}
           scriptId={game.scriptId as ScriptId}
           onClose={() => setInfoTokenOpen(false)}
         />
       )}
 
-      {/* Right nav rail — always visible; swaps the reference panels. Folds in
-          the former floating board button (layoutGrid = focus board). */}
-      <nav className='absolute inset-y-0 right-0 z-[55] flex flex-col items-center justify-center gap-3 px-2'>
+      <button
+        onClick={onBack}
+        aria-label={t.common.back}
+        className='absolute left-4 top-4 z-[55] flex h-11 w-11 items-center justify-center rounded-full border border-board-gold/30 bg-board-ink/80 text-board-gold/70 shadow-lg transition-transform active:scale-90'
+      >
+        <CaretLeft size={24} weight='bold' />
+      </button>
+
+      {/* Top-right nav — always visible; swaps reference and editing panels. */}
+      <nav className='absolute right-4 top-4 z-[55] flex items-center gap-3'>
         {[
-          { id: 'menu', icon: 'menu' as IconName, label: t.game.panels.menu, onPress: onBack, active: false },
           {
             id: 'script',
-            icon: 'scrollText' as IconName,
+            icon: <Icon name='scrollText' size='md' />,
             label: t.game.panels.script,
             onPress: () => setActivePanel((p) => (p === 'script' ? null : 'script')),
             active: activePanel === 'script',
           },
           {
             id: 'nightOrder',
-            icon: 'moon' as IconName,
+            icon: <Icon name='moon' size='md' />,
             label: t.game.panels.nightOrder,
             onPress: () => setActivePanel((p) => (p === 'nightOrder' ? null : 'nightOrder')),
             active: activePanel === 'nightOrder',
           },
+          ...(bluffs && !readOnly
+            ? [
+                {
+                  id: 'bluffs',
+                  icon: <Icon name='drama' size='md' />,
+                  label: t.game.board.demonBluffs,
+                  onPress: () => setShowBluffs(true),
+                  active: showBluffs,
+                },
+              ]
+            : []),
           {
             id: 'infoToken',
-            icon: 'eye' as IconName,
+            icon: <HandEye size={22} weight='regular' />,
             label: t.game.infoTokens.showCard,
             onPress: () => setInfoTokenOpen(true),
             active: infoTokenOpen,
-          },
-          {
-            id: 'board',
-            icon: 'layoutGrid' as IconName,
-            label: t.game.panels.boardView,
-            onPress: () => setActivePanel(null),
-            active: activePanel === null,
           },
           ...(readOnly
             ? []
             : [
                 {
                   id: 'edit',
-                  icon: 'pencil' as IconName,
+                  icon: <UsersThree size={22} weight='regular' />,
                   label: t.game.board.editRoster,
                   onPress: () => setEditing((e) => !e),
                   active: editing,
@@ -573,13 +697,11 @@ export function GrimoireBoard({
             aria-label={item.label}
             aria-pressed={item.active}
             className={cn(
-              'flex h-11 w-11 items-center justify-center rounded-full border shadow-lg transition-transform active:scale-90',
-              item.active
-                ? 'border-board-gold bg-board-gold/20 text-board-gold'
-                : 'border-board-gold/30 bg-board-ink/80 text-board-gold/70',
+              'flex h-11 w-11 items-center justify-center rounded-full text-white shadow-lg transition-transform active:scale-90',
+              item.active ? 'bg-[#a78bda]' : 'bg-[#3a3654]',
             )}
           >
-            <Icon name={item.icon} size='md' />
+            {item.icon}
           </button>
         ))}
       </nav>

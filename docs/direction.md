@@ -9,7 +9,7 @@ Provenance tags: `·said` (his words) · `·blessed` (he explicitly picked) · `
 
 ### Blessed forks
 - Simple Mode is the only reachable experience **for now**; guided mode hidden in the UI but kept in the tree, revivable later. ·said ("i lowkey just want to not have guided mode for now") ·blessed
-- Get Simple Mode **deployed live** so the phone / live site becomes Simple Mode (not just the dev worktree). ·blessed
+- Get Simple Mode **deployed live** so the tablet / live site becomes Simple Mode (not just the dev worktree). Tablet-first app. ·blessed
 - Hosting: **repo made public → free GitHub Pages**, live at https://austindreosch.github.io/grimorium/. ·blessed
 - Death on the board = explicit skull/heart satellite (not a disc-region tap); info-token cards write no history. ·blessed (2026-07-12)
 

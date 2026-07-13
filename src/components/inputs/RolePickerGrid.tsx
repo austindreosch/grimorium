@@ -44,6 +44,8 @@ type RolePickerGridProps = {
    * - "neutral": uses amber/gold tones for all cards regardless of team.
    */
   colorMode?: 'neutral' | 'team'
+  variant?: 'cards' | 'tokens'
+  surface?: 'dark' | 'light'
 }
 
 export function RolePickerGrid({
@@ -53,6 +55,8 @@ export function RolePickerGrid({
   onSelect,
   selectionCount = 1,
   colorMode = 'team',
+  variant = 'cards',
+  surface = 'dark',
 }: RolePickerGridProps) {
   const { t, language } = useI18n()
 
@@ -122,7 +126,7 @@ export function RolePickerGrid({
             </div>
 
             {/* Card Grid */}
-            <div className='grid grid-cols-2 gap-2'>
+            <div className={variant === 'tokens' ? 'grid grid-cols-4 content-start gap-3 sm:grid-cols-5' : 'grid grid-cols-2 gap-2'}>
               {teamRoles.map((role) => {
                 const isSelected = selected.includes(role.id)
                 const isDisabled = !isSelected && isAtMax
@@ -141,6 +145,29 @@ export function RolePickerGrid({
                     ? team.colors.badgeText
                     : 'text-amber-200'
 
+                if (variant === 'tokens') {
+                  return (
+                    <button
+                      key={role.id}
+                      type='button'
+                      disabled={isDisabled}
+                      onClick={() => onSelect(role.id)}
+                      className={cn(
+                        'relative flex justify-center rounded-full transition-transform active:scale-95',
+                        isDisabled && 'cursor-not-allowed opacity-40',
+                      )}
+                      aria-label={getRoleName(role.id)}
+                    >
+                      <CharacterToken
+                        roleId={role.id}
+                        team={role.team}
+                        size={72}
+                        className={cn(isSelected && 'ring-2 ring-board-gold')}
+                      />
+                    </button>
+                  )
+                }
+
                 return (
                   <button
                     key={role.id}
@@ -152,9 +179,11 @@ export function RolePickerGrid({
                       isSelected
                         ? cn(
                             borderClass,
-                            'bg-gradient-to-b from-white/10 to-white/5',
+                            surface === 'light' ? 'bg-board-ink/5' : 'bg-gradient-to-b from-white/10 to-white/5',
                           )
-                        : 'border-white/10 bg-white/5 hover:bg-white/[0.08]',
+                        : surface === 'light'
+                          ? 'border-board-ink/10 bg-white/20 hover:bg-white/30'
+                          : 'border-white/10 bg-white/5 hover:bg-white/[0.08]',
                       isDisabled && 'opacity-40 cursor-not-allowed',
                     )}
                     style={
@@ -198,9 +227,11 @@ export function RolePickerGrid({
                       <div
                         className={cn(
                           'text-[11px] font-tarot tracking-wider uppercase mt-2',
-                          isSelected
-                            ? 'text-parchment-100'
-                            : 'text-parchment-300',
+                          surface === 'light'
+                            ? 'text-board-ink'
+                            : isSelected
+                              ? 'text-parchment-100'
+                              : 'text-parchment-300',
                         )}
                       >
                         {getRoleName(role.id)}
@@ -208,7 +239,10 @@ export function RolePickerGrid({
 
                       {/* Role description */}
                       {desc && (
-                        <p className='text-[11px] text-parchment-500 line-clamp-2 mt-1 leading-snug text-left'>
+                        <p className={cn(
+                          'text-[11px] line-clamp-2 mt-1 leading-snug text-left',
+                          surface === 'light' ? 'text-board-ink/70' : 'text-parchment-500',
+                        )}>
                           {desc}
                         </p>
                       )}
@@ -216,9 +250,12 @@ export function RolePickerGrid({
 
                     {/* Player footer — only when players are assigned */}
                     {assignedPlayers.length > 0 && (
-                      <div className='border-t border-white/10 px-2 py-1.5 space-y-0.5'>
+                      <div className={cn(
+                        'px-2 py-1.5 space-y-0.5',
+                        surface === 'light' ? 'border-t border-board-ink/10' : 'border-t border-white/10',
+                      )}>
                         {assignedPlayers.map((p) => (
-                          <PlayerRow key={p.id} player={p} />
+                          <PlayerRow key={p.id} player={p} surface={surface} />
                         ))}
                       </div>
                     )}
@@ -237,7 +274,7 @@ export function RolePickerGrid({
 // PLAYER ROW (card footer)
 // ============================================================================
 
-function PlayerRow({ player }: { player: PlayerState }) {
+function PlayerRow({ player, surface }: { player: PlayerState; surface: 'dark' | 'light' }) {
   const isDead = hasEffect(player, 'dead')
   const isDrunk = hasEffect(player, 'drunk')
 
@@ -258,13 +295,17 @@ function PlayerRow({ player }: { player: PlayerState }) {
         size='xs'
         className={cn(
           'flex-shrink-0',
-          isDrunk && !isDead ? 'text-amber-400' : 'text-parchment-500',
+          isDrunk && !isDead ? 'text-amber-400' : surface === 'light' ? 'text-board-ink/45' : 'text-parchment-500',
         )}
       />
       <span
         className={cn(
           'text-[11px] truncate flex-1',
-          isDead ? 'text-parchment-500 line-through' : 'text-parchment-400',
+          isDead
+            ? cn(surface === 'light' ? 'text-board-ink/45' : 'text-parchment-500', 'line-through')
+            : surface === 'light'
+              ? 'text-board-ink/65'
+              : 'text-parchment-400',
         )}
       >
         {player.name}
@@ -276,7 +317,7 @@ function PlayerRow({ player }: { player: PlayerState }) {
               key={e.id}
               name={e.icon}
               size='xs'
-              className='text-parchment-600'
+              className={surface === 'light' ? 'text-board-ink/35' : 'text-parchment-600'}
             />
           ))}
         </div>

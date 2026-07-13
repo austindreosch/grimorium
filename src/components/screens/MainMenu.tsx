@@ -6,7 +6,7 @@ import {
 } from '../../lib/storage'
 import { useI18n } from '../../lib/i18n'
 import { Icon } from '../atoms'
-import { MysticDivider } from '../items'
+import { MysticDivider, CloudBackupModal } from '../items'
 import { useShaderBackground } from '../../hooks/useShaderBackground'
 import { cn } from '../../lib/utils'
 
@@ -191,6 +191,7 @@ export function MainMenu({
   )
   const [showPastGames, setShowPastGames] = useState(false)
   const [pastGamesClosing, setPastGamesClosing] = useState(false)
+  const [showBackup, setShowBackup] = useState(false)
 
   // Shader background
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -509,6 +510,14 @@ export function MainMenu({
                     </button>
                   </>
                 )}
+
+                <span className='text-parchment-500/40'>·</span>
+                <button
+                  onClick={() => setShowBackup(true)}
+                  className='text-sm text-parchment-400 hover:text-parchment-200 underline underline-offset-4 decoration-1 decoration-parchment-500/40 transition-colors tracking-wider'
+                >
+                  {t.mainMenu.cloudBackup}
+                </button>
               </div>
             </>
           )}
@@ -599,6 +608,8 @@ export function MainMenu({
           </div>
         </div>
       )}
+
+      {showBackup && <CloudBackupModal onClose={() => setShowBackup(false)} />}
     </div>
   )
 }
