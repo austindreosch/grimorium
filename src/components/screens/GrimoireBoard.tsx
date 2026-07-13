@@ -14,6 +14,7 @@ import { CharacterToken } from '../items/CharacterToken'
 import { ReminderToken } from '../items/ReminderToken'
 import { RolePickerGrid } from '../inputs/RolePickerGrid'
 import { ScriptSheetPanel, NightOrderPanel } from '../items/BoardReferencePanels'
+import { InfoTokenCard } from './InfoTokenCard'
 import { isUnassigned } from '../../lib/unassigned'
 import { Icon } from '../atoms'
 import { IconName } from '../atoms/icon'
@@ -106,6 +107,8 @@ export function GrimoireBoard({
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null)
   // Right-rail reference panel currently open (null = plain board view).
   const [activePanel, setActivePanel] = useState<'script' | 'nightOrder' | null>(null)
+  // Info Token flow (player-facing card library/editor) — full-screen takeover.
+  const [infoTokenOpen, setInfoTokenOpen] = useState(false)
 
   const players = state.players
   const bluffs = useMemo(() => getDemonBluffs(game), [game])
@@ -504,6 +507,17 @@ export function GrimoireBoard({
         />
       )}
 
+      {/* Info Token card flow — player-facing card library + editor. Ephemeral
+          projection aid; writes no game history. */}
+      {infoTokenOpen && !readOnly && (
+        <InfoTokenCard
+          state={state}
+          inPlayRoleIds={inPlayRoleIds}
+          scriptId={game.scriptId as ScriptId}
+          onClose={() => setInfoTokenOpen(false)}
+        />
+      )}
+
       {/* Right nav rail — always visible; swaps the reference panels. Folds in
           the former floating board button (layoutGrid = focus board). */}
       <nav className='absolute inset-y-0 right-0 z-[55] flex flex-col items-center justify-center gap-3 px-2'>
@@ -522,6 +536,13 @@ export function GrimoireBoard({
             label: t.game.panels.nightOrder,
             onPress: () => setActivePanel((p) => (p === 'nightOrder' ? null : 'nightOrder')),
             active: activePanel === 'nightOrder',
+          },
+          {
+            id: 'infoToken',
+            icon: 'eye' as IconName,
+            label: t.game.infoTokens.showCard,
+            onPress: () => setInfoTokenOpen(true),
+            active: infoTokenOpen,
           },
           {
             id: 'board',
