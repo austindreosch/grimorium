@@ -53,11 +53,35 @@ type NewGameScreen =
     selectedRoles: string[]
   }
 
+// sessionStorage key for the in-progress new-game wizard (survives refresh).
+const NEW_GAME_KEY = 'grimoire_new_game'
+
 function App() {
   const { path, navigate, replace } = useRouter()
 
-  // New-game wizard state (lives entirely on the "/" route)
-  const [newGameScreen, setNewGameScreen] = useState<NewGameScreen | null>(null)
+  // New-game wizard state (lives entirely on the "/" route). Persisted to
+  // sessionStorage so a refresh mid-setup restores the exact step + data
+  // instead of dumping the storyteller back to the home splash.
+  const [newGameScreen, setNewGameScreen] = useState<NewGameScreen | null>(
+    () => {
+      try {
+        const raw = sessionStorage.getItem(NEW_GAME_KEY)
+        return raw ? (JSON.parse(raw) as NewGameScreen) : null
+      } catch {
+        return null
+      }
+    },
+  )
+
+  useEffect(() => {
+    try {
+      if (newGameScreen)
+        sessionStorage.setItem(NEW_GAME_KEY, JSON.stringify(newGameScreen))
+      else sessionStorage.removeItem(NEW_GAME_KEY)
+    } catch {
+      // ignore storage quota / private-mode failures
+    }
+  }, [newGameScreen])
 
   // Parse route segments once
   const segments = useMemo(() => path.split('/').filter(Boolean), [path])

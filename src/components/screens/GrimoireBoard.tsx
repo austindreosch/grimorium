@@ -109,6 +109,10 @@ export function GrimoireBoard({
   const [activePanel, setActivePanel] = useState<'script' | 'nightOrder' | null>(null)
   // Info Token flow (player-facing card library/editor) — full-screen takeover.
   const [infoTokenOpen, setInfoTokenOpen] = useState(false)
+  // Roster-edit mode — reveals add/remove-player chrome. Off by default so the
+  // board reads as a clean surface to show players; toggled from the right rail.
+  const [editing, setEditing] = useState(false)
+  const editable = !readOnly && editing
 
   const players = state.players
   const bluffs = useMemo(() => getDemonBluffs(game), [game])
@@ -300,7 +304,7 @@ export function GrimoireBoard({
         })}
 
         {/* Per-token remove (✕) — two-tap confirm, hidden while dragging pips. */}
-        {!readOnly && !dragging &&
+        {editable && !dragging &&
           layout.map(({ player, size, x, y }) => {
             const confirming = confirmRemoveId === player.id
             return (
@@ -337,7 +341,7 @@ export function GrimoireBoard({
           })}
 
         {/* Center cluster — add player + unassigned nudge (idle only). */}
-        {!readOnly && !dragging && (
+        {editable && !dragging && (
           <div className='pointer-events-none absolute left-1/2 top-1/2 z-20 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2'>
             {unassignedCount > 0 && (
               <span className='rounded-full bg-board-evil/90 px-3 py-1 font-body text-xs font-semibold text-white shadow'>
@@ -360,7 +364,7 @@ export function GrimoireBoard({
       </div>
 
       {/* Drag hint */}
-      {!readOnly && (
+      {editable && (
         <p className='px-4 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1 text-center font-body text-xs text-parchment-400/70'>
           {t.game.board.dragHint}
         </p>
@@ -382,7 +386,7 @@ export function GrimoireBoard({
 
       {/* Full library panel (purple) */}
       {libraryOpen && (
-        <div className='absolute inset-0 z-50 flex flex-col bg-board-leather/95' onClick={() => setLibraryOpen(false)}>
+        <div className='absolute inset-0 z-[60] flex flex-col bg-board-leather/95' onClick={() => setLibraryOpen(false)}>
           <div
             className='m-3 mt-[max(0.75rem,env(safe-area-inset-top))] flex flex-1 flex-col overflow-hidden rounded-2xl border-2 border-purple-600/70 bg-board-ink/80'
             onClick={(e) => e.stopPropagation()}
@@ -426,7 +430,7 @@ export function GrimoireBoard({
 
       {/* Change Character picker (blue) — reassign a seat's role */}
       {pickerFor && (
-        <div className='absolute inset-0 z-50 flex flex-col bg-board-leather/95' onClick={closePicker}>
+        <div className='absolute inset-0 z-[60] flex flex-col bg-board-leather/95' onClick={closePicker}>
           <div
             className='m-3 mt-[max(0.75rem,env(safe-area-inset-top))] flex flex-1 flex-col overflow-hidden rounded-2xl border-2 border-board-good/70 bg-board-ink/90'
             onClick={(e) => e.stopPropagation()}
@@ -465,7 +469,7 @@ export function GrimoireBoard({
       {/* Demon bluffs overlay */}
       {showBluffs && bluffs && (
         <div
-          className='absolute inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-board-leather/95 p-6'
+          className='absolute inset-0 z-[60] flex flex-col items-center justify-center gap-4 bg-board-leather/95 p-6'
           onClick={() => setShowBluffs(false)}
         >
           <h3 className='font-tarot text-2xl text-board-gold'>{t.game.board.demonBluffs}</h3>
@@ -551,6 +555,17 @@ export function GrimoireBoard({
             onPress: () => setActivePanel(null),
             active: activePanel === null,
           },
+          ...(readOnly
+            ? []
+            : [
+                {
+                  id: 'edit',
+                  icon: 'pencil' as IconName,
+                  label: t.game.board.editRoster,
+                  onPress: () => setEditing((e) => !e),
+                  active: editing,
+                },
+              ]),
         ].map((item) => (
           <button
             key={item.id}
