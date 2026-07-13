@@ -8,6 +8,7 @@ import {
   getRoster,
   addToRoster,
   removeFromRoster,
+  seedRosterFromGames,
 } from '../../lib/storage'
 
 type Props = {
@@ -60,7 +61,10 @@ export function PlayerEntry({ onNext, onBack, onSwitchToGuided }: Props) {
       .map(() => makePlayerItem(''))
   })
   const [loadedFromLast] = useState(() => getLastGamePlayers().length > 0)
-  const [roster, setRoster] = useState<string[]>(() => getRoster())
+  const [roster, setRoster] = useState<string[]>(() => {
+    seedRosterFromGames()
+    return getRoster()
+  })
   const lastInputRef = useRef<HTMLInputElement>(null)
   const prevLengthRef = useRef(players.length)
 
@@ -229,7 +233,7 @@ export function PlayerEntry({ onNext, onBack, onSwitchToGuided }: Props) {
     <div className='min-h-app bg-gradient-to-b from-grimoire-purple via-grimoire-dark to-grimoire-darker flex flex-col'>
       {/* Header */}
       <div className='sticky top-0 z-10 bg-grimoire-dark/95 backdrop-blur-sm border-b border-mystic-gold/20 px-4 py-3'>
-        <div className='flex items-center gap-3 max-w-lg mx-auto'>
+        <div className='flex items-center gap-3 max-w-3xl mx-auto'>
           <BackButton onClick={onBack} />
           <div>
             <h1 className='font-tarot text-lg text-parchment-100 tracking-wider uppercase'>
@@ -252,7 +256,7 @@ export function PlayerEntry({ onNext, onBack, onSwitchToGuided }: Props) {
       </div>
 
       {/* Content */}
-      <div className='flex-1 px-4 py-6 max-w-lg mx-auto w-full'>
+      <div className='flex-1 px-4 py-6 max-w-3xl mx-auto w-full'>
         {/* Player Count & Loaded indicator */}
         <div className='flex items-center justify-between mb-4'>
           <div className='flex items-center gap-2 text-parchment-400'>
@@ -332,7 +336,7 @@ export function PlayerEntry({ onNext, onBack, onSwitchToGuided }: Props) {
                 {t.newGame.savedPeople}
               </span>
             </div>
-            <div className='grid grid-cols-4 gap-x-2 gap-y-4 sm:grid-cols-5'>
+            <div className='grid grid-cols-4 gap-x-2 gap-y-4 sm:grid-cols-6 md:grid-cols-8'>
               {availableRoster.map((name) => (
                 <div key={name} className='relative flex flex-col items-center'>
                   <button
@@ -374,7 +378,7 @@ export function PlayerEntry({ onNext, onBack, onSwitchToGuided }: Props) {
       </div>
 
       {/* Footer */}
-      <ScreenFooter>
+      <ScreenFooter maxWidth='max-w-3xl'>
         <Button
           onClick={handleNext}
           disabled={!canProceed}

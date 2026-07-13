@@ -53,7 +53,7 @@ export function DealScreen({ players, bag, onShuffle, onManual, onBack }: Props)
     <div className='min-h-app bg-gradient-to-b from-grimoire-purple via-grimoire-dark to-grimoire-darker flex flex-col'>
       {/* Header */}
       <div className='sticky top-0 z-10 bg-grimoire-dark/95 backdrop-blur-sm border-b border-mystic-gold/20 px-4 py-3'>
-        <div className='flex items-center gap-3 max-w-lg mx-auto'>
+        <div className='flex items-center gap-3 max-w-3xl mx-auto'>
           <BackButton onClick={onBack} />
           <div className='flex-1'>
             <h1 className='font-tarot text-lg text-parchment-100 tracking-wider uppercase'>
@@ -70,7 +70,7 @@ export function DealScreen({ players, bag, onShuffle, onManual, onBack }: Props)
       </div>
 
       {/* Choices */}
-      <div className='flex-1 px-4 py-6 max-w-lg mx-auto w-full'>
+      <div className='flex-1 px-4 py-6 max-w-3xl mx-auto w-full'>
         {/* Persistent unassigned nudge — informational, never blocks */}
         {unassignedCount > 0 && (
           <div className='mb-5 flex items-center justify-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2.5 text-amber-300'>
@@ -83,7 +83,7 @@ export function DealScreen({ players, bag, onShuffle, onManual, onBack }: Props)
           </div>
         )}
 
-        <div className='space-y-4'>
+        <div className='grid gap-4 sm:grid-cols-2'>
           {CHOICES.map(({ id, icon, nameKey, descKey, gold }) => (
             <button
               key={id}

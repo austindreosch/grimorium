@@ -39,7 +39,7 @@ export function ModeSelect({ onSelect, onBack }: Props) {
     <div className='min-h-app bg-gradient-to-b from-grimoire-purple via-grimoire-dark to-grimoire-darker flex flex-col'>
       {/* Header */}
       <div className='sticky top-0 z-10 bg-grimoire-dark/95 backdrop-blur-sm border-b border-mystic-gold/20 px-4 py-3'>
-        <div className='flex items-center gap-3 max-w-lg mx-auto'>
+        <div className='flex items-center gap-3 max-w-3xl mx-auto'>
           <BackButton onClick={onBack} />
           <div className='flex-1'>
             <h1 className='font-tarot text-lg text-parchment-100 tracking-wider uppercase'>
@@ -53,8 +53,8 @@ export function ModeSelect({ onSelect, onBack }: Props) {
       </div>
 
       {/* Mode cards */}
-      <div className='flex-1 px-4 py-6 max-w-lg mx-auto w-full'>
-        <div className='space-y-4'>
+      <div className='flex-1 px-4 py-6 max-w-3xl mx-auto w-full'>
+        <div className='grid gap-4 sm:grid-cols-2'>
           {MODES.map(({ mode, icon, nameKey, descKey, gold }) => (
             <button
               key={mode}

@@ -196,7 +196,7 @@ export function RoleSelection({ players, scriptId, onNext, onBack }: Props) {
     <div className='min-h-app bg-gradient-to-b from-grimoire-purple via-grimoire-dark to-grimoire-darker flex flex-col'>
       {/* Header */}
       <div className='sticky top-0 z-10 bg-grimoire-dark/95 backdrop-blur-sm border-b border-mystic-gold/20 px-4 py-3'>
-        <div className='flex items-center gap-3 max-w-lg mx-auto'>
+        <div className='flex items-center gap-3 max-w-3xl mx-auto'>
           <BackButton onClick={onBack} />
           <div className='flex-1'>
             <h1 className='font-tarot text-lg text-parchment-100 tracking-wider uppercase'>
@@ -212,7 +212,7 @@ export function RoleSelection({ players, scriptId, onNext, onBack }: Props) {
       {/* Mode Switcher (script-based only) */}
       {!isCustomMode && (
         <div className='px-4 py-2.5 bg-white/[0.03] border-b border-white/10'>
-          <div className='max-w-lg mx-auto'>
+          <div className='max-w-3xl mx-auto'>
             <div className='flex rounded-lg bg-white/5 p-1 gap-1'>
               <button
                 type='button'
@@ -256,7 +256,7 @@ export function RoleSelection({ players, scriptId, onNext, onBack }: Props) {
       {/* Warnings */}
       {totalRoles > 0 && (totalRoles < players.length || impCount < 1) && (
         <div className='px-4 py-2 bg-mystic-crimson/20 border-b border-red-500/30'>
-          <div className='max-w-lg mx-auto space-y-1'>
+          <div className='max-w-3xl mx-auto space-y-1'>
             {totalRoles < players.length && (
               <div className='flex items-center gap-2 text-red-300 text-xs'>
                 <Icon name='alertTriangle' size='sm' />
@@ -280,7 +280,7 @@ export function RoleSelection({ players, scriptId, onNext, onBack }: Props) {
         {/* Applied toast */}
         {appliedToast && (
           <div className='sticky top-0 z-20 px-4 pt-2 pb-0 animate-toast-in'>
-            <div className='max-w-lg mx-auto'>
+            <div className='max-w-3xl mx-auto'>
               <div className='bg-green-500/15 border border-green-400/30 rounded-lg px-3 py-2 flex items-center gap-2 backdrop-blur-sm'>
                 <div className='w-5 h-5 rounded-full bg-green-400/20 flex items-center justify-center flex-shrink-0'>
                   <Icon name='check' size='xs' className='text-green-300' />
@@ -324,7 +324,7 @@ export function RoleSelection({ players, scriptId, onNext, onBack }: Props) {
       </div>
 
       {/* Footer */}
-      <ScreenFooter>
+      <ScreenFooter maxWidth='max-w-3xl'>
         {/* Team completion dots */}
         {recommended && totalRoles > 0 && (
           <div className='flex justify-center gap-3 mb-2.5'>
@@ -398,7 +398,7 @@ function DistributionTracker({
 }: DistributionTrackerProps) {
   return (
     <div className='bg-white/[0.03] border-b border-white/10'>
-      <div className='max-w-lg mx-auto flex items-center justify-around py-2 px-4'>
+      <div className='max-w-3xl mx-auto flex items-center justify-around py-2 px-4'>
         {TEAM_ORDER.map((teamId) => {
           const team = getTeam(teamId)
           const target = recommended[teamId]
@@ -530,7 +530,7 @@ function GenerateView({
   }, [activePool])
 
   return (
-    <div className='px-4 py-4 max-w-lg mx-auto w-full'>
+    <div className='px-4 py-4 max-w-3xl mx-auto w-full'>
       {/* Preset Tabs */}
       <div className='flex gap-2 mb-4'>
         {PRESET_CONFIG.map((preset) => {
@@ -780,7 +780,7 @@ function TeamSection({
     <div>
       {/* Sticky Team Header */}
       <div className='sticky top-0 z-[5] bg-grimoire-dark/95 backdrop-blur-sm border-b border-white/[0.06] px-4 py-2'>
-        <div className='max-w-lg mx-auto flex items-center gap-2'>
+        <div className='max-w-3xl mx-auto flex items-center gap-2'>
           <Icon name={team.icon} size='sm' className={team.colors.text} />
           <span
             className={cn(
@@ -820,7 +820,7 @@ function TeamSection({
 
       {/* Role Grid */}
       <div className='px-4 pt-3 pb-4'>
-        <div className='max-w-lg mx-auto grid grid-cols-2 gap-2.5'>
+        <div className='max-w-3xl mx-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5'>
           {roles.map((role) => (
             <RoleCard
               key={role.id}
