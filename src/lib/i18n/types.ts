@@ -325,6 +325,25 @@ export type Translations = {
       minionInfo: string
       demonInfo: string
     }
+    // Info Tokens — player-facing cards flashed to a player (Phase D)
+    infoTokens: {
+      showCard: string
+      title: string
+      show: string
+      custom: string
+      library: string
+      searchPlaceholder: string
+      messagePlaceholder: string
+      chooseToken: string
+      noResults: string
+      presets: {
+        yourMinions: { label: string; message: string }
+        youAre: { label: string; message: string }
+        theDemon: { label: string; message: string }
+        notInPlay: { label: string; message: string }
+        direction: { label: string; message: string }
+      }
+    }
   }
 
   // Teams

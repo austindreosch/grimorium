@@ -321,6 +321,24 @@ const en: Translations = {
       minionInfo: 'Minions',
       demonInfo: 'Demon',
     },
+    infoTokens: {
+      showCard: 'Show Card',
+      title: 'Info Token',
+      show: 'Show',
+      custom: 'Custom',
+      library: 'Card Library',
+      searchPlaceholder: 'Search cards…',
+      messagePlaceholder: 'Type a message…',
+      chooseToken: 'Choose token',
+      noResults: 'No cards',
+      presets: {
+        yourMinions: { label: 'Your Minions', message: 'THESE ARE YOUR MINIONS' },
+        youAre: { label: 'You Are', message: 'YOU ARE' },
+        theDemon: { label: 'The Demon', message: 'THIS IS THE DEMON' },
+        notInPlay: { label: 'Not In Play', message: 'THESE CHARACTERS ARE NOT IN PLAY' },
+        direction: { label: 'Direction', message: 'THIS IS SOME DIRECTION' },
+      },
+    },
   },
 
   teams: {

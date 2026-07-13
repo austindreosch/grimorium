@@ -323,6 +323,24 @@ const es: Translations = {
       minionInfo: 'Secuaces',
       demonInfo: 'Demonio',
     },
+    infoTokens: {
+      showCard: 'Mostrar carta',
+      title: 'Ficha de información',
+      show: 'Mostrar',
+      custom: 'Personalizada',
+      library: 'Biblioteca de cartas',
+      searchPlaceholder: 'Buscar cartas…',
+      messagePlaceholder: 'Escribe un mensaje…',
+      chooseToken: 'Elegir ficha',
+      noResults: 'Sin cartas',
+      presets: {
+        yourMinions: { label: 'Tus secuaces', message: 'ESTOS SON TUS SECUACES' },
+        youAre: { label: 'Tú eres', message: 'TÚ ERES' },
+        theDemon: { label: 'El Demonio', message: 'ESTE ES EL DEMONIO' },
+        notInPlay: { label: 'Fuera de juego', message: 'ESTOS PERSONAJES NO ESTÁN EN JUEGO' },
+        direction: { label: 'Indicación', message: 'ESTA ES UNA INDICACIÓN' },
+      },
+    },
   },
 
   teams: {
