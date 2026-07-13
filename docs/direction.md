@@ -10,10 +10,9 @@ Provenance tags: `·said` (his words) · `·blessed` (he explicitly picked) · `
 ### Blessed forks
 - Simple Mode is the only reachable experience **for now**; guided mode hidden in the UI but kept in the tree, revivable later. ·said ("i lowkey just want to not have guided mode for now") ·blessed
 - Get Simple Mode **deployed live** so the phone / live site becomes Simple Mode (not just the dev worktree). ·blessed
+- Hosting: **repo made public → free GitHub Pages**, live at https://austindreosch.github.io/grimorium/. ·blessed
 - Death on the board = explicit skull/heart satellite (not a disc-region tap); info-token cards write no history. ·blessed (2026-07-12)
 
-### Assumptions — you have NOT confirmed
-- ⚠ "Simple mode defaults to guided" = you were seeing the **un-deployed old app**, not a code bug — the whole feature sits on a local branch 24 commits ahead of the deploy branch, never pushed. Code re-checked: New Game correctly defaults to Simple and lands on the board. ·assumed
-
-### Open (undecided)
-- Whether the live deploy should sit at the site root or a project sub-path (Pages config detail) — engineering, resolved during deploy.
+### Resolved
+- "Simple mode defaults to guided" was the **un-deployed old app**, not a code bug — the feature lived on an unpushed local branch. Now merged to master + deployed. Fixed.
+- Deploy sits at project sub-path `/grimorium/` (vite base + client router BASE_URL). Live build serves correct asset paths.
