@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useDrag } from '@use-gesture/react'
 import { PlayerState, EffectInstance, isAlive } from '../../lib/types'
 import { isUnassigned } from '../../lib/unassigned'
@@ -67,7 +67,6 @@ export function BoardToken({
   const [mode, setMode] = useState<'token' | 'info'>('token')
   const [showFan, setShowFan] = useState(false)
   const [drag, setDrag] = useState({ x: 0, y: 0 })
-  const discRef = useRef<HTMLDivElement>(null)
 
   const alive = isAlive(player)
   const hasReminders = characterReminders.length > 0
@@ -82,20 +81,14 @@ export function BoardToken({
     }
   }, [expanded])
 
-  // Disc gestures: drag = cosmetic reposition; tap on the upper half expands,
-  // tap on the lower/shroud half toggles life/death. filterTaps keeps a tap from
-  // firing mid-drag; the lower/upper split is decided at pointer-up from the
-  // pointer's Y vs the disc's mid-height (bounding-rect math), so it never fires
-  // during a reposition drag.
+  // Disc gestures: drag = cosmetic reposition; tap = expand (satellites). Death is
+  // an explicit satellite, not a disc-region tap — so an inspecting tap never kills
+  // a player by accident. filterTaps keeps a tap from firing mid-drag.
   const bindReposition = useDrag(
-    ({ tap, last, xy, movement: [mx, my] }) => {
+    ({ tap, last, movement: [mx, my] }) => {
       if (readOnly) return
       if (tap) {
-        // ponytail: mid-height split heuristic. Lower half = shroud (life/death),
-        // upper half = expand. Tune the 0.5 threshold if the shroud feels off.
-        const rect = discRef.current?.getBoundingClientRect()
-        if (rect && xy[1] > rect.top + rect.height / 2) onToggleDeath()
-        else onTap()
+        onTap()
         return
       }
       if (last) {
@@ -186,10 +179,10 @@ export function BoardToken({
             )
           })}
 
-          {/* The character token disc. Drag = reposition; upper-half tap = expand;
-              lower/shroud-half tap = toggle life/death (see bindReposition). */}
+          {/* The character token disc. Drag = reposition; tap = expand. A dead
+              player wears the full shroud (CharacterToken dead) — life/death is
+              toggled from the explicit skull/heart satellite below. */}
           <div
-            ref={discRef}
             {...bindReposition()}
             className='relative h-full w-full cursor-pointer'
             style={{ touchAction: 'none' }}
@@ -202,15 +195,6 @@ export function BoardToken({
               dead={!alive}
               className={cn(expanded && 'ring-2 ring-board-gold/70')}
             />
-            {/* Persistent shroud fold line — makes the lower-half death-tap
-                discoverable on alive assigned tokens. */}
-            {alive && !unassigned && (
-              <div
-                aria-hidden
-                className='pointer-events-none absolute left-[16%] right-[16%] bg-black/15'
-                style={{ top: '62%', height: 1 }}
-              />
-            )}
           </div>
 
           {/* Satellite actions — only when expanded and interactive */}
@@ -244,8 +228,7 @@ export function BoardToken({
                 ariaLabel={t.game.board.allTokens}
                 onClick={onOpenLibrary}
               />
-              {/* South satellite is now Change Character; life/death moved to the
-                  shroud-half tap on the disc (B1/B3). */}
+              {/* South cardinal = Change Character. */}
               <Satellite
                 icon='userPlus'
                 pos={{ x: 0, y: satOffset }}
@@ -253,6 +236,16 @@ export function BoardToken({
                 tone='blue'
                 ariaLabel={t.game.board.changeCharacter}
                 onClick={onChangeCharacter}
+              />
+              {/* Life/death — explicit skull (alive → kill) / heart (dead → revive)
+                  satellite at the SE diagonal, so an inspecting disc-tap never kills. */}
+              <Satellite
+                icon={alive ? 'skull' : 'heart'}
+                pos={{ x: satOffset * 0.72, y: satOffset * 0.72 }}
+                size={satSize}
+                tone={alive ? 'red' : 'green'}
+                ariaLabel={alive ? t.game.board.markDead : t.game.board.revive}
+                onClick={onToggleDeath}
               />
             </>
           )}
