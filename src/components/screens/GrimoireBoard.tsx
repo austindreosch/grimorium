@@ -13,6 +13,7 @@ import { BoardToken, PipView } from '../items/BoardToken'
 import { CharacterToken } from '../items/CharacterToken'
 import { ReminderToken } from '../items/ReminderToken'
 import { RolePickerGrid } from '../inputs/RolePickerGrid'
+import { ScriptSheetPanel, NightOrderPanel } from '../items/BoardReferencePanels'
 import { isUnassigned } from '../../lib/unassigned'
 import { Icon } from '../atoms'
 import { IconName } from '../atoms/icon'
@@ -103,9 +104,15 @@ export function GrimoireBoard({
   const [pickerShowAll, setPickerShowAll] = useState(false)
   // Two-tap remove confirm — local only, writes no history until the 2nd tap.
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null)
+  // Right-rail reference panel currently open (null = plain board view).
+  const [activePanel, setActivePanel] = useState<'script' | 'nightOrder' | null>(null)
 
   const players = state.players
   const bluffs = useMemo(() => getDemonBluffs(game), [game])
+
+  // The in-play bag drives every reference panel (never the filled seats, so a
+  // partially-dealt manual board still lists the whole bag).
+  const inPlayRoleIds = useMemo(() => getInPlayRoleIds(game), [game])
 
   const unassignedCount = useMemo(
     () => players.filter((p) => isUnassigned(p.roleId)).length,
@@ -219,15 +226,8 @@ export function GrimoireBoard({
 
   return (
     <div className='fixed inset-0 z-40 flex flex-col bg-board-leather'>
-      {/* Top bar */}
-      <div className='flex items-center justify-between px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2'>
-        <button
-          onClick={onBack}
-          className='flex h-10 items-center gap-1.5 rounded-full border border-board-gold/30 bg-board-ink/70 px-3 text-board-gold active:scale-95'
-        >
-          <Icon name='arrowLeft' size='sm' />
-          <span className='font-body text-sm'>{t.common.back}</span>
-        </button>
+      {/* Top bar — navigation lives in the right rail; keep the title + bluffs */}
+      <div className='flex items-center justify-between px-3 pt-[max(0.75rem,env(safe-area-inset-top))] pb-2 pr-14'>
         <h2 className='font-tarot text-xl text-board-gold'>{t.game.board.title}</h2>
         {bluffs && !readOnly ? (
           <button
@@ -487,6 +487,66 @@ export function GrimoireBoard({
           </button>
         </div>
       )}
+
+      {/* Reference panels (read-only) — full-screen slide-over on mobile,
+          docked sidebar on tablet/desktop, driven by the in-play bag. */}
+      {activePanel === 'script' && (
+        <ScriptSheetPanel
+          inPlayRoleIds={inPlayRoleIds}
+          scriptId={game.scriptId as ScriptId}
+          onClose={() => setActivePanel(null)}
+        />
+      )}
+      {activePanel === 'nightOrder' && (
+        <NightOrderPanel
+          inPlayRoleIds={inPlayRoleIds}
+          onClose={() => setActivePanel(null)}
+        />
+      )}
+
+      {/* Right nav rail — always visible; swaps the reference panels. Folds in
+          the former floating board button (layoutGrid = focus board). */}
+      <nav className='absolute inset-y-0 right-0 z-[55] flex flex-col items-center justify-center gap-3 px-2'>
+        {[
+          { id: 'menu', icon: 'menu' as IconName, label: t.game.panels.menu, onPress: onBack, active: false },
+          {
+            id: 'script',
+            icon: 'scrollText' as IconName,
+            label: t.game.panels.script,
+            onPress: () => setActivePanel((p) => (p === 'script' ? null : 'script')),
+            active: activePanel === 'script',
+          },
+          {
+            id: 'nightOrder',
+            icon: 'moon' as IconName,
+            label: t.game.panels.nightOrder,
+            onPress: () => setActivePanel((p) => (p === 'nightOrder' ? null : 'nightOrder')),
+            active: activePanel === 'nightOrder',
+          },
+          {
+            id: 'board',
+            icon: 'layoutGrid' as IconName,
+            label: t.game.panels.boardView,
+            onPress: () => setActivePanel(null),
+            active: activePanel === null,
+          },
+        ].map((item) => (
+          <button
+            key={item.id}
+            onClick={item.onPress}
+            aria-label={item.label}
+            aria-pressed={item.active}
+            className={cn(
+              'flex h-11 w-11 items-center justify-center rounded-full border shadow-lg transition-transform active:scale-90',
+              item.active
+                ? 'border-board-gold bg-board-gold/20 text-board-gold'
+                : 'border-board-gold/30 bg-board-ink/80 text-board-gold/70',
+            )}
+          >
+            <Icon name={item.icon} size='md' />
+          </button>
+        ))}
+      </nav>
     </div>
   )
 }
