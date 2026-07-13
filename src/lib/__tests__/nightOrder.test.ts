@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  FIRST_NIGHT,
-  OTHER_NIGHTS,
-  getNightOrder,
-  NightOrderEntry,
-} from '../nightOrder'
+import { getNightOrder, NightOrderEntry } from '../nightOrder'
 
 const roleIds = (entries: NightOrderEntry[]) =>
   entries.filter((e) => e.kind === 'role').map((e) => (e as { roleId: string }).roleId)
@@ -12,14 +7,31 @@ const roleIds = (entries: NightOrderEntry[]) =>
 const markerIds = (entries: NightOrderEntry[]) =>
   entries.filter((e) => e.kind === 'marker').map((e) => (e as { id: string }).id)
 
-describe('nightOrder table', () => {
-  it('module loads with both night tables', () => {
-    expect(Array.isArray(FIRST_NIGHT)).toBe(true)
-    expect(Array.isArray(OTHER_NIGHTS)).toBe(true)
-  })
+const stepIds = (entries: NightOrderEntry[]) =>
+  entries.filter((e) => e.kind === 'step').map((e) => (e as { id: string }).id)
 
-  it('first-night role entries are in canonical order', () => {
-    expect(roleIds(FIRST_NIGHT)).toEqual([
+// A bag containing every character the calculator knows about, so a single call
+// exercises the full ordering for that night.
+const ALL = [
+  'poisoner',
+  'washerwoman',
+  'librarian',
+  'investigator',
+  'chef',
+  'empath',
+  'fortune_teller',
+  'butler',
+  'spy',
+  'monk',
+  'scarlet_woman',
+  'imp',
+  'ravenkeeper',
+  'undertaker',
+]
+
+describe('getNightOrder ordering', () => {
+  it('orders first-night wakers canonically', () => {
+    expect(roleIds(getNightOrder('first', ALL))).toEqual([
       'poisoner',
       'washerwoman',
       'librarian',
@@ -32,8 +44,8 @@ describe('nightOrder table', () => {
     ])
   })
 
-  it('other-nights role entries are in canonical order', () => {
-    expect(roleIds(OTHER_NIGHTS)).toEqual([
+  it('orders other-night wakers canonically', () => {
+    expect(roleIds(getNightOrder('other', ALL))).toEqual([
       'poisoner',
       'monk',
       'scarlet_woman',
@@ -47,45 +59,38 @@ describe('nightOrder table', () => {
     ])
   })
 
-  it('first/other tables are bookended by Dusk and Dawn', () => {
-    for (const table of [FIRST_NIGHT, OTHER_NIGHTS]) {
-      expect(table[0]).toEqual({ kind: 'marker', id: 'dusk' })
-      expect(table[table.length - 1]).toEqual({ kind: 'marker', id: 'dawn' })
+  it('bookends every night with Dusk and Dawn', () => {
+    for (const which of ['first', 'other'] as const) {
+      const r = getNightOrder(which, ALL)
+      expect(r[0]).toEqual({ kind: 'marker', id: 'dusk' })
+      expect(r[r.length - 1]).toEqual({ kind: 'marker', id: 'dawn' })
     }
   })
 })
 
 describe('getNightOrder filtering', () => {
-  it('keeps only in-play role entries and always keeps Dusk/Dawn', () => {
-    // poisoner (minion) + imp (demon) + chef/empath (townsfolk)
-    const bag = ['poisoner', 'imp', 'chef', 'empath']
-    const result = getNightOrder('first', bag)
-
-    // role rows filtered to the ones that appear on the first night
+  it('keeps only in-play wakers', () => {
+    const result = getNightOrder('first', ['poisoner', 'imp', 'chef', 'empath'])
     expect(roleIds(result)).toEqual(['poisoner', 'chef', 'empath'])
-    // Dusk/Dawn preserved
-    expect(markerIds(result)).toContain('dusk')
-    expect(markerIds(result)).toContain('dawn')
+    expect(markerIds(result)).toEqual(['dusk', 'dawn'])
   })
 
-  it('keeps minion_info / demon_info when the bag has a minion / demon', () => {
+  it('emits minion/demon info steps (first night) when the bag has those teams', () => {
     const result = getNightOrder('first', ['poisoner', 'imp', 'chef'])
-    expect(markerIds(result)).toContain('minion_info')
-    expect(markerIds(result)).toContain('demon_info')
+    expect(stepIds(result)).toEqual(['minion_info', 'demon_info'])
+    // and they sort before the role wakers
+    const kinds = result.map((e) => e.kind)
+    expect(kinds.indexOf('step')).toBeLessThan(kinds.lastIndexOf('role'))
   })
 
-  it('drops minion_info / demon_info when the bag has neither', () => {
-    // townsfolk-only bag: no minion, no demon
+  it('drops the info steps when the bag has neither minion nor demon', () => {
     const result = getNightOrder('first', ['chef', 'empath', 'washerwoman'])
-    expect(markerIds(result)).not.toContain('minion_info')
-    expect(markerIds(result)).not.toContain('demon_info')
-    // Dusk/Dawn still there
-    expect(markerIds(result)).toEqual(['dusk', 'dawn'])
+    expect(stepIds(result)).toEqual([])
   })
 
-  it('other-nights filters roles and preserves markers too', () => {
-    const result = getNightOrder('other', ['imp', 'monk'])
-    expect(roleIds(result)).toEqual(['monk', 'imp'])
-    expect(markerIds(result)).toEqual(['dusk', 'dawn'])
+  it('never emits info steps on other nights', () => {
+    const result = getNightOrder('other', ['poisoner', 'imp', 'monk'])
+    expect(stepIds(result)).toEqual([])
+    expect(roleIds(result)).toEqual(['poisoner', 'monk', 'imp'])
   })
 })
