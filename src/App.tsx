@@ -19,7 +19,6 @@ import {
   RolesLibrary,
   HowToPlayScreen,
 } from './components/screens'
-import { LanguagePicker } from './components/atoms'
 import { useRouter } from './hooks/useRouter'
 import { RoleId } from './lib/roles/types'
 import { GameMode } from './lib/types'
@@ -255,9 +254,6 @@ function App() {
           onSelectRole={(id) => navigate(`/roles/${id}`)}
           onDeselectRole={() => navigate('/roles')}
         />
-        <div className='fixed top-4 right-4 z-50'>
-          <LanguagePicker variant='floating' />
-        </div>
       </div>
     )
   }
@@ -270,9 +266,6 @@ function App() {
     return (
       <div className='relative'>
         <HowToPlayScreen onBack={() => navigate('/')} />
-        <div className='fixed top-4 right-4 z-50'>
-          <LanguagePicker variant='floating' />
-        </div>
       </div>
     )
   }
@@ -424,14 +417,7 @@ function App() {
     )
   }
 
-  return (
-    <div className='relative'>
-      {renderHome()}
-      <div className='fixed top-4 right-4 z-50'>
-        <LanguagePicker variant='floating' />
-      </div>
-    </div>
-  )
+  return renderHome()
 }
 
 export default App

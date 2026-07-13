@@ -22,27 +22,10 @@ export const LANGUAGES: LanguageOption[] = [
   { code: 'es', nativeName: 'Español' },
 ]
 
-const VALID_CODES = new Set<string>(LANGUAGES.map((l) => l.code))
-
 const STORAGE_KEY = 'grimoire_language'
 
-function isValidLanguage(value: string): value is Language {
-  return VALID_CODES.has(value)
-}
-
 function getInitialLanguage(): Language {
-  // Check localStorage first
-  const stored = localStorage.getItem(STORAGE_KEY)
-  if (stored && isValidLanguage(stored)) {
-    return stored
-  }
-
-  // Check browser language
-  const browserLang = navigator.language.slice(0, 2)
-  if (isValidLanguage(browserLang)) {
-    return browserLang
-  }
-
+  // ponytail: English-only app; picker removed. Restore detection here if multi-language returns.
   return 'en'
 }
 
