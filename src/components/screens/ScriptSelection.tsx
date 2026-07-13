@@ -12,7 +12,12 @@ type Props = {
   onBack: () => void
 }
 
-const SCRIPT_ORDER: ScriptId[] = ['trouble-brewing', 'custom']
+const SCRIPT_ORDER: ScriptId[] = [
+  'trouble-brewing',
+  'sects-and-violets',
+  'bad-moon-rising',
+  'custom',
+]
 
 export function ScriptSelection({ players, onSelect, onBack }: Props) {
   const { t, language } = useI18n()

@@ -23,9 +23,9 @@ describe('parseScriptJson', () => {
   })
 
   it('reads object entries and collects unknown roles in dropped', () => {
-    const r = parseScriptJson('[{"id":"chef"},{"id":"chambermaid"},"pixie"]')
+    const r = parseScriptJson('[{"id":"chef"},{"id":"boffin"},"pixie"]')
     expect(r.roles).toEqual(['chef'])
-    expect(r.dropped).toEqual(['chambermaid', 'pixie'])
+    expect(r.dropped).toEqual(['boffin', 'pixie'])
   })
 
   it('de-duplicates repeated roles', () => {

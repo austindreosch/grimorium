@@ -33,6 +33,7 @@ export type Translations = {
     rolesLibrary: string
     browseAllRoles: string
     previousGames: string
+    cloudBackup: string
     completed: string
     settingUp: string
     round: string
@@ -310,6 +311,12 @@ export type Translations = {
       addPlayer: string
       removePlayer: string
       confirmRemove: string
+      editRoster: string
+      editName: string
+      namePlayer: string
+      namePlaceholder: string
+      savedNames: string
+      save: string
     }
     // Right-rail reference panels (script sheet + night order)
     panels: {
@@ -324,6 +331,8 @@ export type Translations = {
       dawn: string
       minionInfo: string
       demonInfo: string
+      minionInfoHint: string
+      demonInfoHint: string
     }
     // Info Tokens — player-facing cards flashed to a player (Phase D)
     infoTokens: {
@@ -337,11 +346,14 @@ export type Translations = {
       chooseToken: string
       noResults: string
       presets: {
-        yourMinions: { label: string; message: string }
         youAre: { label: string; message: string }
+        yourMinions: { label: string; message: string }
         theDemon: { label: string; message: string }
         notInPlay: { label: string; message: string }
-        direction: { label: string; message: string }
+        oneOfThese: { label: string; message: string }
+        characterInPlay: { label: string; message: string }
+        selectedYou: { label: string; message: string }
+        thisPlayerIs: { label: string; message: string }
       }
     }
   }
@@ -406,6 +418,7 @@ export type Translations = {
     effectRemoved: string
     playerAdded: string
     playerRemoved: string
+    playerRenamed: string
     roleChanged: string
     setupAction: string
   }
@@ -413,6 +426,8 @@ export type Translations = {
   // Scripts
   scripts: {
     'trouble-brewing': string
+    'sects-and-violets': string
+    'bad-moon-rising': string
     custom: string
     selectScript: string
     selectScriptSubtitle: string

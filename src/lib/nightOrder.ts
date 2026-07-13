@@ -1,73 +1,83 @@
 import { getRole } from './roles'
+import { EDITION_NIGHT_ORDER } from './roles/editions'
 
 /**
- * Official Trouble Brewing night order, transcribed once from the canonical
- * BOTC night sheet. This is a static reference table for the night-order panel
- * — it does NOT drive the game (Simple Mode is manual). Markers (Dusk, Dawn,
- * and the first-night minion/demon info steps) are interleaved with roles.
+ * Night-order calculator. Every waking character carries its position on the
+ * first night and on other nights (null = it does not act that night). The
+ * narrator panel collects the characters actually in play, adds the fixed
+ * narrator steps (Dusk, Minion/Demon info, Dawn), sorts the whole set by these
+ * numbers, and renders the result. There is no per-script sequence to maintain
+ * by hand — adding a new waking character is one row in ROLE_ORDER.
  *
+ * The numbers are the canonical Trouble Brewing ordering; only their relative
+ * order matters, so gaps are fine and leave room to slot future characters in.
  * Role ids are the app's snake_case ids (fortune_teller, scarlet_woman).
  */
 
 export type NightOrderEntry =
-  | { kind: 'marker'; id: 'dusk' | 'dawn' | 'minion_info' | 'demon_info' }
+  | { kind: 'marker'; id: 'dusk' | 'dawn' } // full-width divider
+  | { kind: 'step'; id: 'minion_info' | 'demon_info' } // narrator info step (a row)
   | { kind: 'role'; roleId: string }
 
-const dusk: NightOrderEntry = { kind: 'marker', id: 'dusk' }
-const dawn: NightOrderEntry = { kind: 'marker', id: 'dawn' }
-const minionInfo: NightOrderEntry = { kind: 'marker', id: 'minion_info' }
-const demonInfo: NightOrderEntry = { kind: 'marker', id: 'demon_info' }
-const role = (roleId: string): NightOrderEntry => ({ kind: 'role', roleId })
+type NightSlot = { first: number | null; other: number | null }
 
-export const FIRST_NIGHT: NightOrderEntry[] = [
-  dusk,
-  minionInfo,
-  demonInfo,
-  role('poisoner'),
-  role('washerwoman'),
-  role('librarian'),
-  role('investigator'),
-  role('chef'),
-  role('empath'),
-  role('fortune_teller'),
-  role('butler'),
-  role('spy'),
-  dawn,
-]
+const ROLE_ORDER: Record<string, NightSlot> = {
+  poisoner: { first: 17, other: 8 },
+  washerwoman: { first: 32, other: null },
+  librarian: { first: 33, other: null },
+  investigator: { first: 34, other: null },
+  chef: { first: 35, other: null },
+  empath: { first: 36, other: 55 },
+  fortune_teller: { first: 37, other: 56 },
+  butler: { first: 38, other: 57 },
+  spy: { first: 46, other: 68 },
+  monk: { first: null, other: 13 },
+  scarlet_woman: { first: null, other: 18 },
+  imp: { first: null, other: 23 },
+  ravenkeeper: { first: null, other: 42 },
+  undertaker: { first: null, other: 53 },
+  // Sects & Violets + Bad Moon Rising (canonical positions, same scale).
+  ...EDITION_NIGHT_ORDER,
+}
 
-export const OTHER_NIGHTS: NightOrderEntry[] = [
-  dusk,
-  role('poisoner'),
-  role('monk'),
-  role('scarlet_woman'),
-  role('imp'),
-  role('ravenkeeper'),
-  role('undertaker'),
-  role('empath'),
-  role('fortune_teller'),
-  role('butler'),
-  role('spy'),
-  dawn,
-]
+// Fixed narrator steps. Dusk/Dawn bookend every night; the two info steps run
+// only on the first night, and only when that team is actually in the bag.
+// Info steps sit just before the first minion acts (Poisoner is 17). Early
+// first-night characters (Philosopher 2, Lunatic 8, Sailor 11) precede them.
+const DUSK = 0
+const MINION_INFO = 15
+const DEMON_INFO = 16
+const DAWN = 1000
 
 /**
- * The night order filtered to the in-play set: role entries are kept only when
- * their role is in the bag; Dusk/Dawn always stay; the first-night minion/demon
- * info markers stay only when the bag actually contains a minion / a demon.
+ * The ordered night sequence for the given night, restricted to the in-play
+ * bag: a character appears only if it acts on this night, and the first-night
+ * minion/demon info steps appear only when the bag holds that team.
  */
 export function getNightOrder(
   which: 'first' | 'other',
   inPlayRoleIds: string[],
 ): NightOrderEntry[] {
-  const inPlay = new Set(inPlayRoleIds)
-  // ponytail: O(n) scan per marker over the bag (<=20 ids) — trivially fine.
+  const first = which === 'first'
+  // ponytail: O(n) scans over the bag (<=20 ids) — trivially fine.
   const bagHasTeam = (team: string) =>
     inPlayRoleIds.some((id) => getRole(id)?.team === team)
-  const table = which === 'first' ? FIRST_NIGHT : OTHER_NIGHTS
-  return table.filter((e) => {
-    if (e.kind === 'role') return inPlay.has(e.roleId)
-    if (e.id === 'minion_info') return bagHasTeam('minion')
-    if (e.id === 'demon_info') return bagHasTeam('demon')
-    return true // dusk / dawn always present
-  })
+
+  const steps: { order: number; entry: NightOrderEntry }[] = [
+    { order: DUSK, entry: { kind: 'marker', id: 'dusk' } },
+    { order: DAWN, entry: { kind: 'marker', id: 'dawn' } },
+  ]
+
+  if (first && bagHasTeam('minion'))
+    steps.push({ order: MINION_INFO, entry: { kind: 'step', id: 'minion_info' } })
+  if (first && bagHasTeam('demon'))
+    steps.push({ order: DEMON_INFO, entry: { kind: 'step', id: 'demon_info' } })
+
+  for (const roleId of new Set(inPlayRoleIds)) {
+    const slot = ROLE_ORDER[roleId]
+    const order = slot ? (first ? slot.first : slot.other) : null
+    if (order != null) steps.push({ order, entry: { kind: 'role', roleId } })
+  }
+
+  return steps.sort((a, b) => a.order - b.order).map((s) => s.entry)
 }

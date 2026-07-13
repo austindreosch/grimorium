@@ -1,6 +1,12 @@
 import { ScriptDefinition, ScriptId, RoleDistribution } from './types'
 import { RoleId } from '../roles/types'
 import { TeamId } from '../teams/types'
+// Pure data (no React) — safe to import here without a roles<->scripts cycle.
+import { SECTS_AND_VIOLETS } from '../roles/editions/sectsAndViolets'
+import { BAD_MOON_RISING } from '../roles/editions/badMoonRising'
+
+const SECTS_AND_VIOLETS_IDS = SECTS_AND_VIOLETS.map((r) => r.id as RoleId)
+const BAD_MOON_RISING_IDS = BAD_MOON_RISING.map((r) => r.id as RoleId)
 
 export type { ScriptId, ScriptDefinition, RoleDistribution } from './types'
 export type { GeneratorPreset, GeneratedPool } from './types'
@@ -33,6 +39,8 @@ export const ALL_ROLE_IDS: RoleId[] = [
   'butler',
   'baron',
   'spy',
+  ...SECTS_AND_VIOLETS_IDS,
+  ...BAD_MOON_RISING_IDS,
 ]
 
 // ============================================================================
@@ -68,6 +76,18 @@ export const SCRIPTS: Record<ScriptId, ScriptDefinition> = {
       'spy',
       'imp',
     ],
+    enforceDistribution: true,
+  },
+  'sects-and-violets': {
+    id: 'sects-and-violets',
+    icon: 'flower',
+    roles: SECTS_AND_VIOLETS_IDS,
+    enforceDistribution: true,
+  },
+  'bad-moon-rising': {
+    id: 'bad-moon-rising',
+    icon: 'cloudMoon',
+    roles: BAD_MOON_RISING_IDS,
     enforceDistribution: true,
   },
   custom: {

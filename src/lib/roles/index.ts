@@ -23,8 +23,10 @@ import Drunk from './definition/trouble-brewing/drunk'
 import Butler from './definition/trouble-brewing/butler'
 import Baron from './definition/trouble-brewing/baron'
 import Spy from './definition/trouble-brewing/spy'
+// Sects & Violets + Bad Moon Rising (data-driven, manual-board only)
+import { buildEditionRoleDefinitions } from './editions/defs'
 
-export const ROLES: Record<RoleId, RoleDefinition> = {
+export const ROLES: Record<string, RoleDefinition> = {
   imp: Imp,
   villager: Villager,
   washerwoman: Washerwoman,
@@ -48,6 +50,7 @@ export const ROLES: Record<RoleId, RoleDefinition> = {
   butler: Butler,
   baron: Baron,
   spy: Spy,
+  ...buildEditionRoleDefinitions(),
 }
 
 // Re-export scripts module for backward compatibility

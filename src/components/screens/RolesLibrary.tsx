@@ -1,11 +1,11 @@
 import { useMemo } from 'react'
-import { getRole } from '../../lib/roles'
-import { SCRIPTS } from '../../lib/scripts'
+import { getRole, getAllRoles } from '../../lib/roles'
 import { RoleId } from '../../lib/roles/types'
 import { getTeam, TeamId } from '../../lib/teams'
 import { useI18n, getRoleName, getRoleDescription } from '../../lib/i18n'
 import { Icon, BackButton } from '../atoms'
 import { RoleCard } from '../items/RoleCard'
+import { CharacterToken } from '../items/CharacterToken'
 import { TeamBackground, CardLink } from '../items/TeamBackground'
 import { MysticDivider } from '../items'
 import { cn } from '../../lib/utils'
@@ -27,18 +27,10 @@ export function RolesLibrary({
 }: Props) {
   const { t, language } = useI18n()
 
-  // Get all roles from the Trouble Brewing script (currently the only one)
-  const scriptRoles = SCRIPTS['trouble-brewing'].roles
-
-  // Group roles by team
+  // Every character across all base-box editions, grouped by team.
   const rolesByTeam = TEAM_ORDER.map((teamId) => {
     const team = getTeam(teamId)
-    const roles = scriptRoles
-      .map((roleId) => getRole(roleId))
-      .filter(
-        (role): role is NonNullable<ReturnType<typeof getRole>> =>
-          role !== undefined && role.team === teamId,
-      )
+    const roles = getAllRoles().filter((role) => role.team === teamId)
     return { teamId, team, roles }
   }).filter((group) => group.roles.length > 0)
 
@@ -119,7 +111,7 @@ export function RolesLibrary({
 
       {/* Role List */}
       <div className='flex-1 overflow-y-auto px-4 pb-6'>
-        <div className='space-y-6 max-w-lg mx-auto w-full'>
+        <div className='space-y-6 max-w-3xl mx-auto w-full'>
           {rolesByTeam.map(({ teamId, team, roles }) => {
             const teamTranslation = t.teams[teamId as keyof typeof t.teams]
             const isEvil = team.isEvil
@@ -147,7 +139,7 @@ export function RolesLibrary({
                 </div>
 
                 {/* Role Items */}
-                <div className='space-y-1'>
+                <div className='grid grid-cols-1 sm:grid-cols-2 gap-1'>
                   {roles.map((role) => {
                     const roleName = getRoleName(role.id, language)
                     const roleDescription = getRoleDescription(
@@ -166,23 +158,12 @@ export function RolesLibrary({
                             : 'hover:bg-white/5 border border-transparent hover:border-white/10',
                         )}
                       >
-                        <div className='flex items-start gap-3'>
-                          <div
-                            className={cn(
-                              'w-10 h-10 rounded-full flex items-center justify-center shrink-0 mt-0.5',
-                              isEvil
-                                ? 'bg-red-900/30 border border-red-600/30'
-                                : 'bg-mystic-gold/10 border border-mystic-gold/20',
-                            )}
-                          >
-                            <Icon
-                              name={role.icon}
-                              size='md'
-                              className={
-                                isEvil ? 'text-red-400' : 'text-mystic-gold'
-                              }
-                            />
-                          </div>
+                        <div className='flex items-center gap-3'>
+                          <CharacterToken
+                            roleId={role.id}
+                            team={role.team}
+                            size={56}
+                          />
                           <div className='flex-1 min-w-0'>
                             <div
                               className={cn(
@@ -198,11 +179,6 @@ export function RolesLibrary({
                               {roleDescription}
                             </p>
                           </div>
-                          <Icon
-                            name='arrowRight'
-                            size='sm'
-                            className='text-parchment-600 group-hover:text-parchment-400 transition-colors mt-1 shrink-0'
-                          />
                         </div>
                       </button>
                     )
