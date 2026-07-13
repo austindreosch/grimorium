@@ -308,6 +308,19 @@ const en: Translations = {
       removePlayer: 'Remove player',
       confirmRemove: 'Remove?',
     },
+    panels: {
+      menu: 'Menu',
+      boardView: 'Board',
+      script: 'Script',
+      nightOrder: 'Night Order',
+      fullScript: 'Full Script',
+      firstNight: 'First Night',
+      otherNights: 'Other Nights',
+      dusk: 'Dusk',
+      dawn: 'Dawn',
+      minionInfo: 'Minions',
+      demonInfo: 'Demon',
+    },
   },
 
   teams: {

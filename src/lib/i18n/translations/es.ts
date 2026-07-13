@@ -310,6 +310,19 @@ const es: Translations = {
       removePlayer: 'Quitar jugador',
       confirmRemove: '¿Quitar?',
     },
+    panels: {
+      menu: 'Menú',
+      boardView: 'Tablero',
+      script: 'Guion',
+      nightOrder: 'Orden nocturno',
+      fullScript: 'Guion completo',
+      firstNight: 'Primera noche',
+      otherNights: 'Otras noches',
+      dusk: 'Anochecer',
+      dawn: 'Amanecer',
+      minionInfo: 'Secuaces',
+      demonInfo: 'Demonio',
+    },
   },
 
   teams: {

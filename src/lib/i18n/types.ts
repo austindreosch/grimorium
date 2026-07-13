@@ -311,6 +311,20 @@ export type Translations = {
       removePlayer: string
       confirmRemove: string
     }
+    // Right-rail reference panels (script sheet + night order)
+    panels: {
+      menu: string
+      boardView: string
+      script: string
+      nightOrder: string
+      fullScript: string
+      firstNight: string
+      otherNights: string
+      dusk: string
+      dawn: string
+      minionInfo: string
+      demonInfo: string
+    }
   }
 
   // Teams
