@@ -307,11 +307,10 @@ function App() {
                   ? handleBackToMenu
                   : () => setNewGameScreen({ type: 'new_game_mode' })
               }
-              onSwitchToGuided={
-                newGameScreen.mode === 'simple'
-                  ? () => setNewGameScreen({ type: 'new_game_mode' })
-                  : undefined
-              }
+              // Guided mode is parked for now: Simple is the only reachable path.
+              // The guided screens/branch stay in the tree (revivable) — just no UI
+              // entry into them. Re-expose by restoring onSwitchToGuided here.
+              onSwitchToGuided={undefined}
             />
           )
 
