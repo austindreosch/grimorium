@@ -7,7 +7,9 @@ export default defineConfig({
   test: {
     include: ['src/**/*.test.{ts,tsx}'],
   },
-  base: '/',
+  // GitHub Pages project site: austindreosch.github.io/grimorium/.
+  // The client router reads this via import.meta.env.BASE_URL, so paths stay correct.
+  base: '/grimorium/',
   plugins: [
     react(),
     VitePWA({
