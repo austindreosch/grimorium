@@ -314,6 +314,9 @@ export type Translations = {
       editRoster: string
       editName: string
       namePlayer: string
+      moveClockwise: string
+      moveCounter: string
+      resetView: string
       namePlaceholder: string
       savedNames: string
       save: string
@@ -329,6 +332,8 @@ export type Translations = {
       otherNights: string
       dusk: string
       dawn: string
+      duskHint: string
+      dawnHint: string
       minionInfo: string
       demonInfo: string
       minionInfoHint: string
@@ -354,6 +359,7 @@ export type Translations = {
         characterInPlay: { label: string; message: string }
         selectedYou: { label: string; message: string }
         thisPlayerIs: { label: string; message: string }
+        yourGrandchild: { label: string; message: string }
       }
     }
   }
@@ -373,6 +379,14 @@ export type Translations = {
       winCondition: string
     }
     demon: {
+      name: string
+      winCondition: string
+    }
+    traveller: {
+      name: string
+      winCondition: string
+    }
+    fabled: {
       name: string
       winCondition: string
     }
@@ -419,6 +433,7 @@ export type Translations = {
     playerAdded: string
     playerRemoved: string
     playerRenamed: string
+    playerMoved: string
     roleChanged: string
     setupAction: string
   }
@@ -454,6 +469,7 @@ export type Translations = {
     imported: string
     importScript: string
     importPlaceholder: string
+    importChooseFile: string
     importLoad: string
     importUse: string
     importRolesFound: string

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useI18n, interpolate } from '../../lib/i18n'
-import { SCRIPTS, ScriptId, setImportedScript } from '../../lib/scripts'
+import { SCRIPTS, ScriptId, setImportedScript, setImportedCustoms } from '../../lib/scripts'
+import { registerCustomCharacters } from '../../lib/roles'
 import { parseScriptJson, ScriptImportResult } from '../../lib/scripts/import'
 import { getRoleName } from '../../lib/i18n'
 import { Icon, BackButton, Button } from '../atoms'
@@ -32,9 +33,9 @@ export function ScriptSelection({ players, onSelect, onBack }: Props) {
     return t.scripts[id as keyof typeof t.scripts] ?? id
   }
 
-  const handleLoad = () => {
+  const parse = (text: string) => {
     try {
-      setImportResult(parseScriptJson(importText))
+      setImportResult(parseScriptJson(text))
       setImportError(null)
     } catch {
       setImportResult(null)
@@ -42,9 +43,28 @@ export function ScriptSelection({ players, onSelect, onBack }: Props) {
     }
   }
 
+  const handleLoad = () => parse(importText)
+
+  // Read a dropped/selected .json file into the box and parse it immediately.
+  const loadFile = (file: File | undefined) => {
+    if (!file) return
+    setShowImport(true)
+    file
+      .text()
+      .then((text) => {
+        setImportText(text)
+        parse(text)
+      })
+      .catch(() => setImportError(t.scripts.importInvalid))
+  }
+
   const handleUseImport = () => {
     if (!importResult || importResult.roles.length === 0) return
     setImportedScript(importResult.roles)
+    setImportedCustoms(importResult.customs)
+    // Register now so the character resolves through the rest of this session;
+    // createGame persists them on the game so they survive a reload too.
+    registerCustomCharacters(importResult.customs)
     onSelect('imported')
   }
 
@@ -187,11 +207,26 @@ export function ScriptSelection({ players, onSelect, onBack }: Props) {
               <textarea
                 value={importText}
                 onChange={(e) => setImportText(e.target.value)}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  loadFile(e.dataTransfer.files[0])
+                }}
                 placeholder={t.scripts.importPlaceholder}
                 rows={5}
                 className='w-full resize-y rounded-lg border border-board-ink/20 bg-parchment-50 p-3 font-mono text-xs text-board-ink placeholder:text-board-ink/40 focus:outline-none focus:ring-2 focus:ring-board-gold/40'
               />
-              <div className='mt-2 flex justify-end'>
+              <div className='mt-2 flex items-center justify-between gap-2'>
+                <label className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-board-ink/20 bg-parchment-50 px-3 py-1.5 text-xs font-medium text-board-ink/80 transition-colors hover:bg-parchment-200'>
+                  <Icon name='bookMarked' size='xs' className='text-board-gold/70' />
+                  {t.scripts.importChooseFile}
+                  <input
+                    type='file'
+                    accept='.json,application/json'
+                    className='hidden'
+                    onChange={(e) => loadFile(e.target.files?.[0])}
+                  />
+                </label>
                 <Button
                   variant='secondary'
                   size='sm'

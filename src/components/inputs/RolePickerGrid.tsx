@@ -12,9 +12,23 @@ import { Icon } from '../atoms'
 import { IconName } from '../atoms/icon'
 import { CharacterToken } from '../items/CharacterToken'
 import { filterVisibleEffects } from '../items/PlayerRoleIcon'
+import { SCRIPTS } from '../../lib/scripts'
 import { cn } from '../../lib/utils'
 
-const TEAM_ORDER: TeamId[] = ['townsfolk', 'outsider', 'minion', 'demon']
+const TEAM_ORDER: TeamId[] = ['townsfolk', 'outsider', 'minion', 'demon', 'traveller', 'fabled']
+
+// Script ordering for the flat picker: Trouble Brewing → Bad Moon Rising →
+// Sects & Violets, everything else last. Built once from static SCRIPTS.
+const SCRIPT_RANK: Record<string, number> = (() => {
+  const order = ['trouble-brewing', 'bad-moon-rising', 'sects-and-violets']
+  const map: Record<string, number> = {}
+  order.forEach((sid, i) => {
+    for (const rid of SCRIPTS[sid as keyof typeof SCRIPTS]?.roles ?? []) {
+      if (!(rid in map)) map[rid] = i
+    }
+  })
+  return map
+})()
 
 type RolePickerGridProps = {
   /** All roles available for selection. Pre-filtered by the caller. */
@@ -46,6 +60,16 @@ type RolePickerGridProps = {
   colorMode?: 'neutral' | 'team'
   variant?: 'cards' | 'tokens'
   surface?: 'dark' | 'light'
+  /** Denser card grid with no ability subtext (used in the info-token picker). */
+  compact?: boolean
+  hideTeamHeaders?: boolean
+  /**
+   * Render one continuous grid instead of per-team sections. Roles are sorted:
+   * in-play first, then by team (townsfolk→outsider→minion→demon→traveller),
+   * then by script (Trouble Brewing→Bad Moon Rising→Sects & Violets).
+   * Implies `hideTeamHeaders`.
+   */
+  flat?: boolean
 }
 
 export function RolePickerGrid({
@@ -57,6 +81,9 @@ export function RolePickerGrid({
   colorMode = 'team',
   variant = 'cards',
   surface = 'dark',
+  compact = false,
+  hideTeamHeaders = false,
+  flat = false,
 }: RolePickerGridProps) {
   const { t, language } = useI18n()
 
@@ -67,6 +94,8 @@ export function RolePickerGrid({
       outsider: [],
       minion: [],
       demon: [],
+      traveller: [],
+      fabled: [],
     }
     for (const role of roles) {
       grouped[role.team].push(role)
@@ -103,8 +132,156 @@ export function RolePickerGrid({
     selectionCount !== undefined &&
     selected.length >= selectionCount
 
+  const gridClass = cn(
+    'grid gap-2',
+    variant === 'tokens'
+      ? 'grid-cols-4 content-start gap-3 sm:grid-cols-5'
+      : compact
+        ? 'grid-cols-3 sm:grid-cols-4 lg:grid-cols-6'
+        : 'grid-cols-2',
+  )
+
+  const renderRoleCard = (role: RoleDefinition) => {
+    const team = getTeam(role.team)
+    const isSelected = selected.includes(role.id)
+    const isDisabled = !isSelected && isAtMax
+    const assignedPlayers = playersByRole.get(role.id) ?? []
+    const desc = getRoleDescription(role.id)
+
+    // Determine colors based on colorMode
+    const borderClass =
+      colorMode === 'team' ? team.colors.cardBorder : 'border-amber-500/50'
+    const badgeBg = colorMode === 'team' ? team.colors.badge : 'bg-amber-500/20'
+    const badgeTextClass =
+      colorMode === 'team' ? team.colors.badgeText : 'text-amber-200'
+
+    if (variant === 'tokens') {
+      return (
+        <button
+          key={role.id}
+          type='button'
+          disabled={isDisabled}
+          onClick={() => onSelect(role.id)}
+          className={cn(
+            'relative flex justify-center rounded-full transition-transform active:scale-95',
+            isDisabled && 'cursor-not-allowed opacity-40',
+          )}
+          aria-label={getRoleName(role.id)}
+        >
+          <CharacterToken
+            roleId={role.id}
+            team={role.team}
+            size={72}
+            className={cn(isSelected && 'ring-2 ring-board-gold')}
+          />
+        </button>
+      )
+    }
+
+    return (
+      <button
+        key={role.id}
+        type='button'
+        disabled={isDisabled}
+        onClick={() => onSelect(role.id)}
+        className={cn(
+          'rounded-xl border-2 transition-all relative flex flex-col',
+          isSelected
+            ? cn(
+                borderClass,
+                surface === 'light' ? 'bg-board-ink/5' : 'bg-gradient-to-b from-white/10 to-white/5',
+              )
+            : surface === 'light'
+              ? 'border-board-ink/10 bg-white/20 hover:bg-white/30'
+              : 'border-white/10 bg-white/5 hover:bg-white/[0.08]',
+          isDisabled && 'opacity-40 cursor-not-allowed',
+        )}
+        style={
+          isSelected
+            ? {
+                boxShadow: `0 0 16px ${team.colors.cardGlow}, inset 0 1px 0 rgba(255,255,255,0.06)`,
+              }
+            : undefined
+        }
+      >
+        {/* Card body */}
+        <div className={cn('text-center flex-1', compact ? 'px-2 py-3' : 'px-3 pt-4 pb-3')}>
+          {/* Selected checkmark */}
+          {isSelected && (
+            <div className='absolute top-2 right-2'>
+              <div
+                className={cn(
+                  'w-5 h-5 rounded-full flex items-center justify-center',
+                  badgeBg,
+                )}
+              >
+                <Icon name='check' size='xs' className={badgeTextClass} />
+              </div>
+            </div>
+          )}
+
+          {/* Real character-token art (locked "tokens are always real") */}
+          <div className='flex justify-center'>
+            <CharacterToken roleId={role.id} team={role.team} size={compact ? 100 : 44} />
+          </div>
+
+          {/* Role name */}
+          {!compact && (
+            <div
+              className={cn(
+                'text-[11px] font-tarot tracking-wider uppercase mt-2',
+                surface === 'light'
+                  ? 'text-board-ink'
+                  : isSelected
+                    ? 'text-parchment-100'
+                    : 'text-parchment-300',
+              )}
+            >
+              {getRoleName(role.id)}
+            </div>
+          )}
+
+          {/* Role description */}
+          {desc && !compact && (
+            <p className={cn(
+              'text-[11px] line-clamp-2 mt-1 leading-snug text-left',
+              surface === 'light' ? 'text-board-ink/70' : 'text-parchment-500',
+            )}>
+              {desc}
+            </p>
+          )}
+        </div>
+
+        {/* Player badge — overlaid top-left, only when players are assigned */}
+        {assignedPlayers.length > 0 && (
+          <div className={cn(
+            'absolute top-1.5 left-1.5 max-w-[85%] rounded-md px-1.5 py-0.5 space-y-0.5 backdrop-blur-sm',
+            surface === 'light' ? 'bg-board-ink/10' : 'bg-black/60',
+          )}>
+            {assignedPlayers.map((p) => (
+              <PlayerRow key={p.id} player={p} surface={surface} />
+            ))}
+          </div>
+        )}
+      </button>
+    )
+  }
+
+  // Flat mode: one continuous grid, sorted in-play → team → script.
+  if (flat) {
+    const sorted = [...roles].sort((a, b) => {
+      const aIn = playersByRole.has(a.id) ? 0 : 1
+      const bIn = playersByRole.has(b.id) ? 0 : 1
+      if (aIn !== bIn) return aIn - bIn
+      const teamDiff = TEAM_ORDER.indexOf(a.team) - TEAM_ORDER.indexOf(b.team)
+      if (teamDiff !== 0) return teamDiff
+      return (SCRIPT_RANK[a.id] ?? 99) - (SCRIPT_RANK[b.id] ?? 99)
+    })
+    return <div className={gridClass}>{sorted.map(renderRoleCard)}</div>
+  }
+
   return (
-    <div className='space-y-4'>
+    <div className={hideTeamHeaders ? 'space-y-2' : 'space-y-4'}>
       {TEAM_ORDER.map((teamId) => {
         const teamRoles = rolesByTeam[teamId]
         if (teamRoles.length === 0) return null
@@ -112,157 +289,22 @@ export function RolePickerGrid({
 
         return (
           <div key={teamId}>
-            {/* Team Header */}
-            <div className='flex items-center gap-2 mb-2 ml-1'>
-              <Icon name={team.icon} size='sm' className={team.colors.text} />
-              <span
-                className={cn(
-                  'text-xs font-tarot tracking-wider uppercase',
-                  team.colors.text,
-                )}
-              >
-                {getTeamName(teamId)}
-              </span>
-            </div>
+            {!hideTeamHeaders && (
+              <div className='flex items-center gap-2 mb-2 ml-1'>
+                <Icon name={team.icon} size='sm' className={team.colors.text} />
+                <span
+                  className={cn(
+                    'text-xs font-tarot tracking-wider uppercase',
+                    team.colors.text,
+                  )}
+                >
+                  {getTeamName(teamId)}
+                </span>
+              </div>
+            )}
 
             {/* Card Grid */}
-            <div className={variant === 'tokens' ? 'grid grid-cols-4 content-start gap-3 sm:grid-cols-5' : 'grid grid-cols-2 gap-2'}>
-              {teamRoles.map((role) => {
-                const isSelected = selected.includes(role.id)
-                const isDisabled = !isSelected && isAtMax
-                const assignedPlayers = playersByRole.get(role.id) ?? []
-                const desc = getRoleDescription(role.id)
-
-                // Determine colors based on colorMode
-                const borderClass =
-                  colorMode === 'team'
-                    ? team.colors.cardBorder
-                    : 'border-amber-500/50'
-                const badgeBg =
-                  colorMode === 'team' ? team.colors.badge : 'bg-amber-500/20'
-                const badgeTextClass =
-                  colorMode === 'team'
-                    ? team.colors.badgeText
-                    : 'text-amber-200'
-
-                if (variant === 'tokens') {
-                  return (
-                    <button
-                      key={role.id}
-                      type='button'
-                      disabled={isDisabled}
-                      onClick={() => onSelect(role.id)}
-                      className={cn(
-                        'relative flex justify-center rounded-full transition-transform active:scale-95',
-                        isDisabled && 'cursor-not-allowed opacity-40',
-                      )}
-                      aria-label={getRoleName(role.id)}
-                    >
-                      <CharacterToken
-                        roleId={role.id}
-                        team={role.team}
-                        size={72}
-                        className={cn(isSelected && 'ring-2 ring-board-gold')}
-                      />
-                    </button>
-                  )
-                }
-
-                return (
-                  <button
-                    key={role.id}
-                    type='button'
-                    disabled={isDisabled}
-                    onClick={() => onSelect(role.id)}
-                    className={cn(
-                      'rounded-xl border-2 transition-all relative flex flex-col',
-                      isSelected
-                        ? cn(
-                            borderClass,
-                            surface === 'light' ? 'bg-board-ink/5' : 'bg-gradient-to-b from-white/10 to-white/5',
-                          )
-                        : surface === 'light'
-                          ? 'border-board-ink/10 bg-white/20 hover:bg-white/30'
-                          : 'border-white/10 bg-white/5 hover:bg-white/[0.08]',
-                      isDisabled && 'opacity-40 cursor-not-allowed',
-                    )}
-                    style={
-                      isSelected
-                        ? {
-                            boxShadow: `0 0 16px ${team.colors.cardGlow}, inset 0 1px 0 rgba(255,255,255,0.06)`,
-                          }
-                        : undefined
-                    }
-                  >
-                    {/* Card body */}
-                    <div className='px-3 pt-4 pb-3 text-center flex-1'>
-                      {/* Selected checkmark */}
-                      {isSelected && (
-                        <div className='absolute top-2 right-2'>
-                          <div
-                            className={cn(
-                              'w-5 h-5 rounded-full flex items-center justify-center',
-                              badgeBg,
-                            )}
-                          >
-                            <Icon
-                              name='check'
-                              size='xs'
-                              className={badgeTextClass}
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Real character-token art (locked "tokens are always real") */}
-                      <div className='flex justify-center'>
-                        <CharacterToken
-                          roleId={role.id}
-                          team={role.team}
-                          size={44}
-                        />
-                      </div>
-
-                      {/* Role name */}
-                      <div
-                        className={cn(
-                          'text-[11px] font-tarot tracking-wider uppercase mt-2',
-                          surface === 'light'
-                            ? 'text-board-ink'
-                            : isSelected
-                              ? 'text-parchment-100'
-                              : 'text-parchment-300',
-                        )}
-                      >
-                        {getRoleName(role.id)}
-                      </div>
-
-                      {/* Role description */}
-                      {desc && (
-                        <p className={cn(
-                          'text-[11px] line-clamp-2 mt-1 leading-snug text-left',
-                          surface === 'light' ? 'text-board-ink/70' : 'text-parchment-500',
-                        )}>
-                          {desc}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Player footer — only when players are assigned */}
-                    {assignedPlayers.length > 0 && (
-                      <div className={cn(
-                        'px-2 py-1.5 space-y-0.5',
-                        surface === 'light' ? 'border-t border-board-ink/10' : 'border-t border-white/10',
-                      )}>
-                        {assignedPlayers.map((p) => (
-                          <PlayerRow key={p.id} player={p} surface={surface} />
-                        ))}
-                      </div>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
+            <div className={gridClass}>{teamRoles.map(renderRoleCard)}</div>
           </div>
         )
       })}
@@ -295,7 +337,7 @@ function PlayerRow({ player, surface }: { player: PlayerState; surface: 'dark' |
         size='xs'
         className={cn(
           'flex-shrink-0',
-          isDrunk && !isDead ? 'text-amber-400' : surface === 'light' ? 'text-board-ink/45' : 'text-parchment-500',
+          isDrunk && !isDead ? 'text-amber-400' : surface === 'light' ? 'text-black' : 'text-parchment-500',
         )}
       />
       <span
@@ -304,7 +346,7 @@ function PlayerRow({ player, surface }: { player: PlayerState; surface: 'dark' |
           isDead
             ? cn(surface === 'light' ? 'text-board-ink/45' : 'text-parchment-500', 'line-through')
             : surface === 'light'
-              ? 'text-board-ink/65'
+              ? 'text-black'
               : 'text-parchment-400',
         )}
       >

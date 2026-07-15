@@ -26,6 +26,7 @@ import {
   addPlayer,
   removePlayer,
   renamePlayer,
+  movePlayer,
   processAutoSkips,
   applySetupAction,
   getLastNightDeaths,
@@ -595,6 +596,10 @@ export function GameScreen({ initialGame, onMainMenu }: Props) {
     updateGame(removePlayer(game, playerId))
   }
 
+  const handleMovePlayer = (playerId: string, dir: 1 | -1) => {
+    updateGame(movePlayer(game, playerId, dir))
+  }
+
   // Rename a seat and remember the name in the account roster for tap-to-add.
   const handleRenamePlayer = (playerId: string, name: string) => {
     updateGame(renamePlayer(game, playerId, name))
@@ -837,6 +842,7 @@ export function GameScreen({ initialGame, onMainMenu }: Props) {
             onSetPlayerRole={handleSetPlayerRole}
             onAddPlayer={handleAddPlayer}
             onRemovePlayer={handleRemovePlayer}
+            onMovePlayer={handleMovePlayer}
             onRenamePlayer={handleRenamePlayer}
             onBack={() =>
               screen.returnTo ? setScreen(screen.returnTo) : onMainMenu()

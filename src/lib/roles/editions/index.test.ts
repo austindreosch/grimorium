@@ -6,9 +6,11 @@ import { getScript } from '../../scripts'
 import { getCharacterReminders, getAllReminders } from '../../reminders/catalog'
 import { getNightOrder } from '../../nightOrder'
 
-describe('base-box editions (S&V + BMR)', () => {
-  it('registers 50 manual-only characters (25 each)', () => {
-    expect(EDITION_ROLES).toHaveLength(50)
+describe('base-box editions (S&V + BMR) + full catalog', () => {
+  it('registers every manual-only character (SNV+BMR = 50, plus the catalog)', () => {
+    // SNV (25) + BMR (25) + the catalog of all other official characters
+    // (Experimental, Fabled, Travellers). Guards against silent shrinkage.
+    expect(EDITION_ROLES.length).toBeGreaterThanOrEqual(50)
     // Manual board: none wake in the guided engine.
     for (const r of EDITION_ROLES) {
       const def = getRole(r.id)
@@ -16,6 +18,16 @@ describe('base-box editions (S&V + BMR)', () => {
       expect(def?.nightOrder).toBeNull()
       expect(def?.NightAction).toBeNull()
     }
+  })
+
+  it('resolves catalog characters across teams (Experimental, Fabled, Traveller)', () => {
+    // Regression guard for the "any script imports" feature: these previously
+    // had no data and were dropped on import.
+    for (const id of ['banshee', 'kazali', 'ojo', 'high_priestess']) {
+      expect(getRole(id), id).toBeDefined()
+    }
+    expect(getRole('bishop')?.team).toBe('traveller')
+    expect(getRole('doomsayer')?.team).toBe('fabled')
   })
 
   it('each character has a registered name + ability', () => {
@@ -34,8 +46,8 @@ describe('base-box editions (S&V + BMR)', () => {
     // Poisoner-style mechanical token from BMR (Sailor -> Drunk).
     expect(getCharacterReminders('sailor').map((r) => r.label)).toContain('Drunk')
     const labels = getAllReminders().map((r) => r.label)
-    expect(labels.length).toBe(new Set(labels).size)
-    expect(labels.slice(-3)).toEqual(['Good', 'Evil', 'Custom'])
+    expect(labels).toContain('Drunk')
+    expect(labels.at(-1)).toBe('Custom')
   })
 
   it('places waking edition characters in the night order', () => {

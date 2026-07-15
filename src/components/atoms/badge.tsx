@@ -15,6 +15,8 @@ const badgeVariants = cva(
         outsider: 'bg-cyan-500/20 text-cyan-200 border border-cyan-400/30',
         minion: 'bg-orange-500/20 text-orange-200 border border-orange-400/30',
         demon: 'bg-red-600/20 text-red-200 border border-red-400/30',
+        traveller: 'bg-slate-500/20 text-slate-200 border border-slate-400/30',
+        fabled: 'bg-amber-500/20 text-amber-100 border border-amber-400/30',
         dead: 'bg-gray-600/50 text-gray-300 border border-gray-500/30',
         success: 'bg-green-500/20 text-green-200 border border-green-400/30',
         warning: 'bg-yellow-500/20 text-yellow-200 border border-yellow-400/30',

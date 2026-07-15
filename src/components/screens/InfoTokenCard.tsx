@@ -16,6 +16,8 @@ import { Icon } from '../atoms'
 type Props = {
   state: GameState
   scriptId: ScriptId
+  /** Full script role list (persisted for imported scripts); falls back to the static table. */
+  scriptRoleIds?: string[]
   /** Dismiss the whole flow, back to the board. */
   onClose: () => void
 }
@@ -34,12 +36,7 @@ const CARD = '#6d6488' // raised lavender card
 const KEYWORD = '#e8a94a' // gold highlight on the last word
 const MAX_TOKENS = 3
 
-/** Token size shrinks as more tokens share the straddle row. */
-function tokenSize(count: number): number {
-  if (count <= 1) return 164
-  if (count === 2) return 128
-  return 104
-}
+const CARD_TOKEN_SIZE = 164
 
 /** Split the message so the trailing word can be gilded (matches the mockups). */
 function GildedMessage({ text }: { text: string }) {
@@ -115,15 +112,10 @@ function ChromeButton({
   )
 }
 
-function PlayerNameToken({ name, size = 140 }: { name: string; size?: number }) {
+function PlayerNameToken({ name }: { name: string }) {
   return (
-    <div
-      className='flex shrink-0 items-center justify-center rounded-full border border-white/40 bg-white/85 px-3 text-center shadow-xl'
-      style={{ width: size, height: size }}
-    >
-      <span className='font-body text-sm font-black uppercase tracking-[0.16em] text-board-ink'>
-        {name}
-      </span>
+    <div className='shrink-0 px-3 text-center font-read text-5xl font-semibold uppercase leading-none tracking-wide text-white'>
+      {name}
     </div>
   )
 }
@@ -143,10 +135,10 @@ function TokenView({
     return role ? <CharacterToken roleId={role.id} team={role.team} size={size} /> : null
   }
   const player = state.players.find((p) => p.id === choice.playerId)
-  return player ? <PlayerNameToken name={player.name} size={size} /> : null
+  return player ? <PlayerNameToken name={player.name} /> : null
 }
 
-export function InfoTokenCard({ state, scriptId, onClose }: Props) {
+export function InfoTokenCard({ state, scriptId, scriptRoleIds, onClose }: Props) {
   const { t } = useI18n()
   const [view, setView] = useState<View>('library')
   const [editing, setEditing] = useState(false)
@@ -160,10 +152,10 @@ export function InfoTokenCard({ state, scriptId, onClose }: Props) {
   const results = useMemo(() => searchPresets(search, t), [search, t])
 
   const pickerRoles = useMemo<RoleDefinition[]>(() => {
-    return [...new Set(getScript(scriptId).roles)]
+    return [...new Set(scriptRoleIds ?? getScript(scriptId).roles)]
       .map(getRole)
       .filter((r): r is RoleDefinition => !!r)
-  }, [scriptId])
+  }, [scriptId, scriptRoleIds])
 
   const openEditor = (preset: InfoTokenPreset | null) => {
     setMessage(preset ? preset.getDefaultMessage(t) : '')
@@ -175,7 +167,7 @@ export function InfoTokenCard({ state, scriptId, onClose }: Props) {
     setView('card')
   }
 
-  const size = tokenSize(tokens.length + (editing && tokens.length < MAX_TOKENS ? 1 : 0))
+  const size = CARD_TOKEN_SIZE
 
   // ── Card (reveal + inline edit) ──────────────────────────────────────────────
   // Clean reveal by default; tap the card to show edit chrome, tap the stage
@@ -200,7 +192,7 @@ export function InfoTokenCard({ state, scriptId, onClose }: Props) {
           </div>
 
           <InfoCard
-            hasToken={tokens.length > 0}
+            hasToken={tokens.length > 0 || editing}
             onClick={(e) => {
               // Card taps must not bubble to the stage (which would dismiss).
               e.stopPropagation()
@@ -229,20 +221,28 @@ export function InfoTokenCard({ state, scriptId, onClose }: Props) {
                       <TokenView key={i} choice={choice} state={state} size={size} />
                     ),
                   )}
-                  {editing && tokens.length < MAX_TOKENS && (
+                  {editing && tokens.length === 0 && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
                         setPickerOpen(true)
                       }}
                       aria-label={t.game.infoTokens.chooseToken}
-                      className='flex flex-col items-center justify-center gap-1 rounded-full border-4 border-dashed border-white/40 bg-white/10 text-white/80 transition-transform active:scale-95'
-                      style={{ width: size, height: size }}
+                      className='flex h-12 w-12 items-center justify-center rounded-full bg-white/15 text-white/85 shadow-xl transition-transform active:scale-95'
                     >
-                      <Icon name='plus' size='xl' />
-                      <span className='font-body text-[11px]'>
-                        {t.game.infoTokens.chooseToken}
-                      </span>
+                      <Icon name='plus' size='lg' />
+                    </button>
+                  )}
+                  {editing && tokens.length > 0 && tokens.length < MAX_TOKENS && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setPickerOpen(true)
+                      }}
+                      aria-label={t.game.infoTokens.chooseToken}
+                      className='absolute left-[calc(100%+0.5rem)] top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white/85 shadow-xl transition-transform active:scale-95'
+                    >
+                      <Icon name='plus' size='lg' />
                     </button>
                   )}
                 </div>
@@ -290,7 +290,7 @@ export function InfoTokenCard({ state, scriptId, onClose }: Props) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className='flex max-h-full w-full max-w-3xl flex-col gap-4 overflow-hidden rounded-[2rem] bg-parchment-200 p-4 shadow-2xl sm:p-6'
+        className='flex max-h-full w-full max-w-3xl flex-col gap-4 overflow-hidden rounded-[2rem] bg-parchment-200 p-3 shadow-2xl'
       >
         {/* Search pill */}
         <div className='flex items-center gap-3 rounded-full bg-white px-5 py-3 shadow-inner'>
@@ -374,7 +374,7 @@ function TokenPicker({
   onClose: () => void
 }) {
   const { t } = useI18n()
-  const [tab, setTab] = useState<PickerTab>('players')
+  const [tab, setTab] = useState<PickerTab>('characters')
   return (
     <div
       className='absolute inset-0 z-[65] flex items-center justify-center p-4'
@@ -382,31 +382,33 @@ function TokenPicker({
       onClick={onClose}
     >
       <div
-        className='flex max-h-full w-full max-w-md flex-col gap-3 overflow-hidden rounded-[2rem] bg-parchment-200 p-4 shadow-2xl'
+        className='flex h-[85vh] w-full max-w-5xl flex-col gap-3 overflow-hidden rounded-xl bg-parchment-200 p-3 shadow-2xl'
         onClick={(e) => e.stopPropagation()}
       >
-        <div className='flex items-center gap-3 rounded-full bg-white px-5 py-2.5'>
-          <Icon name='search' size='sm' className='text-board-ink/50' />
-          <span className='flex-1 font-body text-board-ink/80'>
-            {t.game.infoTokens.chooseToken}
-          </span>
+        <div className='flex gap-3'>
+          <div className='flex h-9 flex-1 items-center gap-3 rounded-[10px] bg-white px-4'>
+            <Icon name='search' size='sm' className='text-board-ink/50' />
+            <span className='flex-1 font-body text-xs text-board-ink/80'>
+              {t.game.infoTokens.chooseToken}
+            </span>
+          </div>
+          <div className='grid h-9 w-[22rem] grid-cols-2 rounded-[10px] border border-board-ink/15 bg-board-ink/10 p-1'>
+            {(['characters', 'players'] as PickerTab[]).map((key) => (
+              <button
+                key={key}
+                onClick={() => setTab(key)}
+                className={`rounded-lg px-3 font-body text-xs transition-transform active:scale-95 ${
+                  tab === key ? 'bg-board-ink text-parchment-100' : 'text-board-ink/65'
+                }`}
+              >
+                {key === 'players' ? t.common.players : t.game.board.allCharacters}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className='grid grid-cols-2 rounded-[10px] border border-board-ink/15 bg-board-ink/10 p-1'>
-          {(['players', 'characters'] as PickerTab[]).map((key) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              className={`rounded-lg px-3 py-2 font-body text-xs transition-transform active:scale-95 ${
-                tab === key ? 'bg-board-ink text-parchment-100' : 'text-board-ink/65'
-              }`}
-            >
-              {key === 'players' ? t.common.players : t.game.board.allCharacters}
-            </button>
-          ))}
-        </div>
-        <div className='overflow-y-auto rounded-2xl bg-board-ink/10 p-3'>
+        <div className='min-h-0 flex-1 overflow-y-auto rounded-2xl bg-board-ink/10 p-3'>
           {tab === 'players' ? (
-            <div className='grid grid-cols-2 gap-2'>
+            <div className='grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4'>
               {state.players.map((player) => {
                 const isSelected = selected.some(
                   (s) => s.kind === 'player' && s.playerId === player.id,
@@ -421,7 +423,7 @@ function TokenPicker({
                         : 'border-board-ink/10 bg-white/20'
                     }`}
                   >
-                    <PlayerNameToken name={player.name} size={52} />
+                    <Icon name='user' size='md' className='shrink-0 text-board-ink/60' />
                     <span className='min-w-0 flex-1 truncate font-body text-sm font-bold text-board-ink'>
                       {player.name}
                     </span>
@@ -433,10 +435,12 @@ function TokenPicker({
             <RolePickerGrid
               roles={roles}
               state={state}
-              selected={selected.flatMap((s) => (s.kind === 'role' ? [s.roleId] : []))}
+              selected={[]}
               onSelect={(roleId) => onSelect({ kind: 'role', roleId })}
-              selectionCount={1}
+              selectionCount={MAX_TOKENS}
               surface='light'
+              compact
+              flat
             />
           )}
         </div>

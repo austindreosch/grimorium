@@ -46,6 +46,8 @@ const TEAM_ACCENT: Record<TeamId, string> = {
   outsider: '#5E8CBA',
   minion: '#B84A2C',
   demon: '#8A2222',
+  traveller: '#6B6155',
+  fabled: '#C9A24B',
 }
 
 const GOLD = '#C9A24B'

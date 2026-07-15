@@ -6,6 +6,7 @@ void main() {
     gl_Position = vec4(a_position, 0.0, 1.0);
 }
 `
+const shaderStartTimes = new Map<string, number>()
 
 function compileShader(
   gl: WebGLRenderingContext,
@@ -38,6 +39,7 @@ export function useShaderBackground(
   canvasRef: RefObject<HTMLCanvasElement | null>,
   fragmentShader: string,
   pixelScale: number = 0.5,
+  resizeDelayMs: number = 0,
 ) {
   useEffect(() => {
     const canvas = canvasRef.current
@@ -80,11 +82,23 @@ export function useShaderBackground(
     const posLoc = gl.getAttribLocation(program, 'a_position')
     const timeLoc = gl.getUniformLocation(program, 'u_time')
     const resLoc = gl.getUniformLocation(program, 'u_resolution')
+    const startTime = shaderStartTimes.get(fragmentShader) ?? performance.now()
+    shaderStartTimes.set(fragmentShader, startTime)
 
     gl.enableVertexAttribArray(posLoc)
     gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0)
 
+    const draw = () => {
+      const time = (performance.now() - startTime) / 1000
+      gl.useProgram(program)
+      gl.uniform1f(timeLoc, time)
+      gl.uniform2f(resLoc, canvas.width, canvas.height)
+      gl.clear(gl.COLOR_BUFFER_BIT)
+      gl.drawArrays(gl.TRIANGLES, 0, 6)
+    }
+
     // --- Resize handler (renders at reduced resolution) ---
+    let resizeTimer = 0
     const resize = () => {
       // DPR-aware drawing buffer size
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
@@ -99,27 +113,30 @@ export function useShaderBackground(
         canvas.width = w
         canvas.height = h
         gl.viewport(0, 0, w, h)
+        draw()
       }
+    }
+    const scheduleResize = () => {
+      if (!resizeDelayMs) {
+        resize()
+        return
+      }
+      window.clearTimeout(resizeTimer)
+      resizeTimer = window.setTimeout(resize, resizeDelayMs)
     }
 
     resize()
 
-    const observer = new ResizeObserver(resize)
+    const observer = new ResizeObserver(scheduleResize)
     observer.observe(canvas)
 
     // --- Animation loop ---
     let animationId = 0
     let paused = false
-    const startTime = performance.now()
 
     const render = () => {
       if (!paused) {
-        const time = (performance.now() - startTime) / 1000
-        gl.useProgram(program)
-        gl.uniform1f(timeLoc, time)
-        gl.uniform2f(resLoc, canvas.width, canvas.height)
-        gl.clear(gl.COLOR_BUFFER_BIT)
-        gl.drawArrays(gl.TRIANGLES, 0, 6)
+        draw()
       }
       animationId = requestAnimationFrame(render)
     }
@@ -135,6 +152,7 @@ export function useShaderBackground(
     // --- Cleanup ---
     return () => {
       cancelAnimationFrame(animationId)
+      window.clearTimeout(resizeTimer)
       document.removeEventListener('visibilitychange', onVisibility)
       observer.disconnect()
       gl.deleteBuffer(buffer)
@@ -142,5 +160,5 @@ export function useShaderBackground(
       gl.deleteShader(fs)
       gl.deleteProgram(program)
     }
-  }, [canvasRef, fragmentShader, pixelScale])
+  }, [canvasRef, fragmentShader, pixelScale, resizeDelayMs])
 }

@@ -12,6 +12,7 @@ import {
   getAlivePlayers,
 } from './types'
 import { getRole } from './roles'
+import { getScript, getImportedCustoms, type ScriptId } from './scripts'
 import { RoleDefinition, NightActionResult, EffectToAdd } from './roles/types'
 import {
   resolveIntent,
@@ -76,12 +77,21 @@ export function createGame(
     winner: null,
   }
 
+  // Imported scripts live only in the in-session SCRIPTS.imported holder, so
+  // snapshot their role list + homebrew characters onto the game to survive a
+  // reload. Built-in scripts resolve their roles from the static table.
+  const imported = scriptId === 'imported'
+  const scriptRoleIds = imported ? [...getScript('imported').roles] : undefined
+  const customCharacters = imported ? getImportedCustoms() : undefined
+
   const game: Game = {
     id: gameId,
     name,
     scriptId,
     mode,
     ...(inPlayRoleIds ? { inPlayRoleIds } : {}),
+    ...(scriptRoleIds ? { scriptRoleIds } : {}),
+    ...(customCharacters?.length ? { customCharacters } : {}),
     createdAt: Date.now(),
     history: [
       {
@@ -120,6 +130,16 @@ export function getInPlayRoleIds(game: Game): string[] {
     .players.map((p) => p.roleId)
     .filter((id) => !isUnassigned(id))
   return [...new Set(assigned)]
+}
+
+/**
+ * The full character list of this game's script. Imported/custom scripts carry
+ * a persisted `scriptRoleIds` (survives reload); built-in scripts resolve from
+ * the static table. Use this instead of `getScript(scriptId).roles` anywhere
+ * the board offers the whole script (pickers, reference panels).
+ */
+export function getScriptRoleIds(game: Game): string[] {
+  return game.scriptRoleIds ?? getScript(game.scriptId as ScriptId).roles
 }
 
 // ============================================================================
@@ -1219,6 +1239,39 @@ export function removePlayer(game: Game, playerId: string): Game {
       data: { playerId, name: player.name, source: 'narrator' },
     },
     { players: state.players.filter((p) => p.id !== playerId) },
+  )
+}
+
+/**
+ * Shift a seat one place around the table (narrator board action). `dir` +1 moves
+ * the player clockwise (toward the next seat), -1 counter-clockwise; both wrap
+ * around the circle. Implemented as a swap with the neighbour, so repeated calls
+ * walk the player around the table. Emits one `player_moved` entry. No-op for a
+ * missing seat or a table of fewer than two players.
+ *
+ * Cosmetic board offsets are keyed by player id and left untouched here; the
+ * board clears the swapped seats' offsets so they snap into their new places.
+ */
+export function movePlayer(game: Game, playerId: string, dir: 1 | -1): Game {
+  const state = getCurrentState(game)
+  const players = state.players
+  const i = players.findIndex((p) => p.id === playerId)
+  if (i === -1 || players.length < 2) return game
+
+  const j = (i + dir + players.length) % players.length
+  const reordered = [...players]
+  ;[reordered[i], reordered[j]] = [reordered[j], reordered[i]]
+
+  return addHistoryEntry(
+    game,
+    {
+      type: 'player_moved',
+      message: [
+        { type: 'i18n', key: 'history.playerMoved', params: { name: players[i].name } },
+      ],
+      data: { playerId, dir, swappedWith: players[j].id, source: 'narrator' },
+    },
+    { players: reordered },
   )
 }
 

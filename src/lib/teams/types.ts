@@ -1,6 +1,16 @@
 import { IconName } from '../../components/atoms/icon'
 
-export type TeamId = 'townsfolk' | 'outsider' | 'minion' | 'demon'
+// Core alignment teams drive the game engine + bag distribution. Traveller and
+// Fabled are display-only categories: they never enter the bag, but characters
+// of these types are placeable on the manual board (imported scripts include
+// them), so they carry a team for art, labels, and grouping.
+export type TeamId =
+  | 'townsfolk'
+  | 'outsider'
+  | 'minion'
+  | 'demon'
+  | 'traveller'
+  | 'fabled'
 
 export type TeamDefinition = {
   id: TeamId

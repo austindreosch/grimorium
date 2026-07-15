@@ -35,3 +35,10 @@ TODO.md
 # Local env (cloud backup keys)
 .env
 .env.local
+
+# Scratch / agent working files
+.playwright-mcp/
+.scratch/
+tmp/
+manual-board.png
+menu.png

@@ -22,10 +22,45 @@ describe('parseScriptJson', () => {
     expect(r.roles).toEqual(['chef'])
   })
 
-  it('reads object entries and collects unknown roles in dropped', () => {
+  it('resolves official object + string entries (incl. experimental)', () => {
+    // boffin/pixie are Experimental — now in the catalog, so they resolve.
     const r = parseScriptJson('[{"id":"chef"},{"id":"boffin"},"pixie"]')
+    expect(r.roles).toEqual(['chef', 'boffin', 'pixie'])
+    expect(r.dropped).toEqual([])
+  })
+
+  it('drops bare ids with no character data', () => {
+    const r = parseScriptJson('[{"id":"chef"},"totally_made_up_role"]')
     expect(r.roles).toEqual(['chef'])
-    expect(r.dropped).toEqual(['boffin', 'pixie'])
+    expect(r.customs).toEqual([])
+    expect(r.dropped).toEqual(['totally_made_up_role'])
+  })
+
+  it('captures inline homebrew characters (id + name) as customs', () => {
+    const r = parseScriptJson(
+      JSON.stringify([
+        { id: 'my_guy', name: 'My Guy', team: 'traveler', ability: 'Does a thing.', image: 'http://x/y.png', firstNight: 5 },
+        'chef',
+      ]),
+    )
+    expect(r.roles).toEqual(['my_guy', 'chef'])
+    expect(r.dropped).toEqual([])
+    expect(r.customs).toHaveLength(1)
+    const c = r.customs[0]
+    expect(c).toMatchObject({
+      id: 'my_guy',
+      name: 'My Guy',
+      team: 'traveller', // 'traveler' normalized
+      ability: 'Does a thing.',
+      image: 'http://x/y.png',
+      firstNight: 5,
+    })
+  })
+
+  it('official ids win over inline data of the same id', () => {
+    const r = parseScriptJson('[{"id":"chef","name":"Fake Chef"}]')
+    expect(r.roles).toEqual(['chef'])
+    expect(r.customs).toEqual([])
   })
 
   it('de-duplicates repeated roles', () => {

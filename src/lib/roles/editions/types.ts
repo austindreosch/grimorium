@@ -12,6 +12,8 @@ export type EditionReminder = {
   icon: IconName
   tone?: 'good' | 'evil' | 'neutral' | 'reminder'
   effectType?: EffectId
+  /** Full pre-composed official token art, resolved at registration time. */
+  tokenSrc?: string
 }
 
 /**

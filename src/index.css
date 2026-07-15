@@ -35,6 +35,22 @@
   font-weight: 400 600;
   font-display: swap;
 }
+/* Script-sheet faces matching the printed BotC sheet. Real Goudy Old Style /
+   Trade Gothic are named first (used if the OS has them); the bundled OFL
+   fallbacks — Sorts Mill Goudy (a Goudy Old Style revival) and Libre Franklin
+   (a Trade-Gothic-adjacent grotesque) — guarantee a close match everywhere. */
+@font-face {
+  font-family: 'Sorts Mill Goudy';
+  src: url('/grimorium/assets/fonts/SortsMillGoudy.ttf') format('truetype');
+  font-weight: 400 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Libre Franklin';
+  src: url('/grimorium/assets/fonts/LibreFranklin.ttf') format('truetype');
+  font-weight: 100 900;
+  font-display: swap;
+}
 @font-face {
   font-family: 'Eudoxus Sans';
   src: url('/grimorium/assets/fonts/EudoxusSans-Bold.ttf') format('truetype');

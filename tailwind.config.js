@@ -12,12 +12,17 @@ export default {
         // Display / token names / headers — the Blood on the Clocktower face.
         tarot: ['"Dumbledor"', '"Cinzel"', 'serif'],
         token: ['"Dumbledor"', '"Cinzel"', 'serif'],
+        cinzel: ['"Cinzel"', 'serif'],
         // Old-print flavour text.
         flavor: ['"IM Fell English"', 'Georgia', 'serif'],
         // Reading body copy.
         read: ['"EB Garamond"', 'Georgia', 'serif'],
         // Functional UI (labels, buttons, badges).
         body: ['"Eudoxus Sans"', 'system-ui', 'sans-serif'],
+        // Printed BotC script-sheet faces: Goudy Old Style names, Trade Gothic
+        // ability text (licensed names first, bundled OFL fallbacks second).
+        sheet: ['"Goudy Old Style"', '"Sorts Mill Goudy"', 'Georgia', 'serif'],
+        sheetSans: ['"Trade Gothic"', '"Libre Franklin"', 'Helvetica Neue', 'Arial', 'sans-serif'],
       },
       letterSpacing: {
         'widest-xl': '0.2em',

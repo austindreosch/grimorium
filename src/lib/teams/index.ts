@@ -3,6 +3,8 @@ import townsfolk from './definition/townsfolk'
 import outsider from './definition/outsider'
 import minion from './definition/minion'
 import demon from './definition/demon'
+import traveller from './definition/traveller'
+import fabled from './definition/fabled'
 
 export type { TeamDefinition, TeamId } from './types'
 
@@ -11,6 +13,8 @@ const TEAMS: Record<TeamId, TeamDefinition> = {
   outsider,
   minion,
   demon,
+  traveller,
+  fabled,
 }
 
 export function getTeam(teamId: TeamId): TeamDefinition {

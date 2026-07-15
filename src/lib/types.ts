@@ -2,6 +2,8 @@
 // CORE TYPES
 // ============================================================================
 
+import { TeamId } from './teams/types'
+
 export type Team = 'townsfolk' | 'outsider' | 'minion' | 'demon'
 
 export type Phase = 'setup' | 'night' | 'day' | 'ended'
@@ -76,6 +78,7 @@ export type EventType =
   | 'player_added'
   | 'player_removed'
   | 'player_renamed'
+  | 'player_moved'
   | 'role_changed'
   | 'role_change_revealed'
   | 'setup_action'
@@ -109,8 +112,34 @@ export type Game = {
    * (see `getInPlayRoleIds` in game.ts).
    */
   inPlayRoleIds?: string[]
+  /**
+   * The full character list of an imported / custom script, persisted so the
+   * board's picker + reference panels survive a reload (the in-session
+   * `SCRIPTS.imported` holder does not). Absent for the built-in scripts, which
+   * resolve their roles from the static `SCRIPTS` table.
+   */
+  scriptRoleIds?: string[]
+  /** Homebrew characters defined inline in an imported script (non-official). */
+  customCharacters?: CustomCharacter[]
   createdAt: number
   history: HistoryEntry[]
+}
+
+/**
+ * A homebrew character carried inline in an imported script JSON (the official
+ * script tool embeds these as full objects). Data-only: the storyteller runs
+ * the ability by hand, exactly like the official catalog characters. `image` is
+ * an author-provided token URL; when absent the generic team disc is used.
+ */
+export type CustomCharacter = {
+  id: string
+  name: string
+  team: TeamId
+  ability: string
+  image?: string
+  firstNight?: number | null
+  otherNight?: number | null
+  reminders?: string[]
 }
 
 // ============================================================================

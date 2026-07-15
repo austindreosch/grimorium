@@ -13,19 +13,25 @@ describe('reminders catalog', () => {
     expect(getCharacterReminders('villager')).toEqual([])
   })
 
-  it('offers the whole catalog regardless of who is in play, de-duped, generics last', () => {
+  it('offers the whole catalog regardless of who is in play, image-only, Custom last', () => {
     const reminders = getAllReminders()
-    const labels = reminders.map((r) => r.label)
 
-    // No duplicate labels
-    expect(labels.length).toBe(new Set(labels).size)
+    // Every offered token (bar the freehand Custom) is backed by official art —
+    // no hand-drawn Good/Evil/Attack pips.
+    for (const r of reminders) {
+      if (r.label === 'Custom') continue
+      expect(r.tokenSrc).toBeDefined()
+    }
 
     // Full catalog, not filtered to in-play roles: reminders from characters
     // that need not be seated are present (e.g. the Washerwoman's).
+    const labels = reminders.map((r) => r.label)
     expect(labels).toContain('Townsfolk')
     expect(labels).toContain('Poisoned')
 
-    // Generic markers appended at the end, in order
-    expect(labels.slice(-3)).toEqual(['Good', 'Evil', 'Custom'])
+    // Removed custom tokens are gone; the single freehand marker is appended last.
+    expect(labels).not.toContain('Good')
+    expect(labels).not.toContain('Evil')
+    expect(labels.at(-1)).toBe('Custom')
   })
 })
