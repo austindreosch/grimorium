@@ -46,6 +46,8 @@ type RolePickerGridProps = {
   colorMode?: 'neutral' | 'team'
   variant?: 'cards' | 'tokens'
   surface?: 'dark' | 'light'
+  /** Denser card grid with no ability subtext (used in the info-token picker). */
+  compact?: boolean
 }
 
 export function RolePickerGrid({
@@ -57,6 +59,7 @@ export function RolePickerGrid({
   colorMode = 'team',
   variant = 'cards',
   surface = 'dark',
+  compact = false,
 }: RolePickerGridProps) {
   const { t, language } = useI18n()
 
@@ -67,6 +70,8 @@ export function RolePickerGrid({
       outsider: [],
       minion: [],
       demon: [],
+      traveller: [],
+      fabled: [],
     }
     for (const role of roles) {
       grouped[role.team].push(role)
@@ -126,7 +131,16 @@ export function RolePickerGrid({
             </div>
 
             {/* Card Grid */}
-            <div className={variant === 'tokens' ? 'grid grid-cols-4 content-start gap-3 sm:grid-cols-5' : 'grid grid-cols-2 gap-2'}>
+            <div
+              className={cn(
+                'grid gap-2',
+                variant === 'tokens'
+                  ? 'grid-cols-4 content-start gap-3 sm:grid-cols-5'
+                  : compact
+                    ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4'
+                    : 'grid-cols-2',
+              )}
+            >
               {teamRoles.map((role) => {
                 const isSelected = selected.includes(role.id)
                 const isDisabled = !isSelected && isAtMax
@@ -238,7 +252,7 @@ export function RolePickerGrid({
                       </div>
 
                       {/* Role description */}
-                      {desc && (
+                      {desc && !compact && (
                         <p className={cn(
                           'text-[11px] line-clamp-2 mt-1 leading-snug text-left',
                           surface === 'light' ? 'text-board-ink/70' : 'text-parchment-500',

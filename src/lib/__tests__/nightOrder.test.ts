@@ -51,9 +51,9 @@ describe('getNightOrder ordering', () => {
       'scarlet_woman',
       'imp',
       'ravenkeeper',
-      'undertaker',
       'empath',
       'fortune_teller',
+      'undertaker',
       'butler',
       'spy',
     ])

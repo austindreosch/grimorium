@@ -3,12 +3,15 @@ import { EffectId } from '../effects/types'
 import { getRole } from '../roles'
 import { getRoleArt } from '../roles/art'
 import { EDITION_REMINDERS } from '../roles/editions'
+import { getReminderTokenArt } from './tokenArt'
 
 export type ReminderDef = {
   label: string
   icon: IconName
   iconRoleId?: string
   iconSrc?: string
+  /** Full pre-composed official token art (disc + icon + label). */
+  tokenSrc?: string
   tone?: 'good' | 'evil' | 'neutral' | 'reminder'
   effectType?: EffectId
 }
@@ -46,11 +49,22 @@ const GLOBAL_REMINDERS: ReminderDef[] = [
   { label: 'Is The Drunk', icon: 'beer', iconRoleId: 'drunk', tone: 'neutral', effectType: 'drunk' },
 ]
 
+// Only the freehand Custom token remains hand-drawn; every other reminder is
+// official token art. Good/Evil were removed in favour of image-based tokens.
 const GENERIC_REMINDERS: ReminderDef[] = [
-  { label: 'Good', icon: 'thumbsUp', iconSrc: `${BASE}assets/characters/generic/good.webp`, tone: 'good' },
-  { label: 'Evil', icon: 'thumbsDown', iconSrc: `${BASE}assets/characters/generic/evil.webp`, tone: 'evil' },
   { label: 'Custom', icon: 'pencil', iconSrc: `${BASE}assets/characters/generic/custom.webp`, tone: 'neutral' },
 ]
+
+// Attach official token art to every catalog reminder that has one. Keyed by
+// the owning role id so the art resolver can find the baked-in disc image.
+for (const [roleId, reminders] of Object.entries(ROLE_REMINDERS)) {
+  for (const reminder of reminders ?? []) {
+    reminder.tokenSrc = getReminderTokenArt(roleId, reminder.label)
+  }
+}
+for (const reminder of GLOBAL_REMINDERS) {
+  reminder.tokenSrc = getReminderTokenArt(reminder.effectType === 'drunk' ? 'drunk' : reminder.label, reminder.label)
+}
 
 export function getCharacterReminders(roleId: string): ReminderDef[] {
   return ROLE_REMINDERS[roleId] ?? EDITION_REMINDERS[roleId] ?? []
@@ -73,22 +87,23 @@ export function getReminderByEffectType(effectType: EffectId): ReminderDef | und
 }
 
 /**
- * Every reminder token in the catalog, deduped by label. Placement is
- * unrestricted: any token may sit on any player, so the tray offers the full
- * set regardless of which characters are in play.
+ * Every placeable reminder token: official token art only (deduped by art), plus
+ * the single freehand Custom token. Reminders without art (e.g. Lunatic's
+ * Attack pips) are omitted — the tray is image-based. Placement is unrestricted:
+ * any token may sit on any player, regardless of which characters are in play.
  */
 export function getAllReminders(): ReminderDef[] {
   const seen = new Set<string>()
   const result: ReminderDef[] = []
   const push = (reminder: ReminderDef) => {
-    if (seen.has(reminder.label)) return
-    seen.add(reminder.label)
+    if (!reminder.tokenSrc || seen.has(reminder.tokenSrc)) return
+    seen.add(reminder.tokenSrc)
     result.push(reminder)
   }
 
   for (const list of Object.values(ROLE_REMINDERS)) list?.forEach(push)
   for (const list of Object.values(EDITION_REMINDERS)) list.forEach(push)
   GLOBAL_REMINDERS.forEach(push)
-  GENERIC_REMINDERS.forEach(push)
+  result.push(...GENERIC_REMINDERS) // the freehand Custom token
   return result
 }

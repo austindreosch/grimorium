@@ -420,6 +420,8 @@ const TEAM_SHADERS: Record<TeamId, string> = {
   outsider: OUTSIDER_SHADER,
   minion: MINION_SHADER,
   demon: DEMON_SHADER,
+  traveller: OUTSIDER_SHADER,
+  fabled: TOWNSFOLK_SHADER,
 }
 
 // =============================================================================

@@ -6,6 +6,11 @@ import { cn } from '../../lib/utils'
 type Props = {
   icon: IconName
   iconSrc?: string
+  /**
+   * Full pre-composed reminder token art (disc, icon, and label all baked in).
+   * When present it replaces the styled pip entirely — the official game piece.
+   */
+  tokenSrc?: string
   label: string
   /** Pip diameter in px. Board ~48. */
   size?: number
@@ -28,6 +33,7 @@ const TONE_ICON: Record<NonNullable<Props['tone']>, string> = {
 export function ReminderToken({
   icon,
   iconSrc,
+  tokenSrc,
   label,
   size = 48,
   tone = 'neutral',
@@ -36,6 +42,30 @@ export function ReminderToken({
 }: Props) {
   const Tag = onClick ? 'button' : 'div'
   const arcId = useId()
+
+  // Official reminder token art already bakes in the disc, icon, and label —
+  // render it full-bleed and skip the styled pip below.
+  if (tokenSrc) {
+    return (
+      <Tag
+        onClick={onClick}
+        style={{ width: size, height: size }}
+        className={cn(
+          'relative shrink-0 select-none rounded-full',
+          'shadow-[0_2px_8px_rgba(0,0,0,0.55)]',
+          onClick && 'transition-transform active:scale-95',
+          className,
+        )}
+      >
+        <img
+          src={tokenSrc}
+          alt={label}
+          draggable={false}
+          className='h-full w-full rounded-full object-cover'
+        />
+      </Tag>
+    )
+  }
   const upperLabel = label.toUpperCase()
   const labelSize = Math.max(8, Math.min(14, 15.5 - upperLabel.length * 0.28))
   const labelSpacing = upperLabel.length > 6 ? 2.2 : 3.2

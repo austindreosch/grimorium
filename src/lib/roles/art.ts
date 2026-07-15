@@ -1,4 +1,5 @@
 import { isEvilTeam, TeamId } from '../teams'
+import { getCustomCharacter } from './customCharacters'
 
 /**
  * Official Blood on the Clocktower token art.
@@ -53,6 +54,8 @@ const GENERIC_BY_TEAM: Record<TeamId, string> = {
   outsider: 'outsider',
   minion: 'minion',
   demon: 'demon',
+  traveller: 'traveller',
+  fabled: 'fabled',
 }
 
 /** Convert an app role id to its art file base name. */
@@ -69,6 +72,8 @@ export function getRoleArt(roleId: string, team: TeamId): string {
   if (TB_ART_BASES.has(base)) {
     return `${BASE}assets/characters/tb/${base}_${tint}.webp`
   }
+  // Fabled art has no alignment tint (single token); everything else is _g/_e.
+  if (team === 'fabled') return `${BASE}assets/characters/generic/fabled.webp`
   const generic = GENERIC_BY_TEAM[team] ?? 'custom'
   return `${BASE}assets/characters/generic/${generic}_${tint}.webp`
 }
@@ -77,6 +82,23 @@ export function getRoleArt(roleId: string, team: TeamId): string {
 export function hasRoleArt(roleId: string): boolean {
   return TB_ART_BASES.has(artBase(roleId))
 }
+
+/**
+ * Full pre-composed character token PNG (parchment disc, border, art, and the
+ * role name all baked in — the physical game piece as a single image). App role
+ * ids are snake_case; token files are kebab-case (fortune_teller →
+ * fortune-teller.png). Unknown/custom roles fall back to `_blank.png` at render
+ * time via the <img> onError handler in CharacterToken.
+ */
+export function getTokenArt(roleId: string): string {
+  // Homebrew characters carry an author-provided token image URL.
+  const custom = getCustomCharacter(roleId)
+  if (custom?.image) return custom.image
+  return `${BASE}assets/tokens/${roleId.replace(/_/g, '-')}.png`
+}
+
+/** Blank token disc for custom/unknown roles with no baked token PNG. */
+export const BLANK_TOKEN = `${BASE}assets/tokens/_blank.png`
 
 /** Parchment token-back texture (the physical token look). */
 export const PARCHMENT_TEXTURE = `${BASE}assets/textures/pback.png`

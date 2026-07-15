@@ -16,6 +16,8 @@ import { Icon } from '../atoms'
 type Props = {
   state: GameState
   scriptId: ScriptId
+  /** Full script role list (persisted for imported scripts); falls back to the static table. */
+  scriptRoleIds?: string[]
   /** Dismiss the whole flow, back to the board. */
   onClose: () => void
 }
@@ -146,7 +148,7 @@ function TokenView({
   return player ? <PlayerNameToken name={player.name} size={size} /> : null
 }
 
-export function InfoTokenCard({ state, scriptId, onClose }: Props) {
+export function InfoTokenCard({ state, scriptId, scriptRoleIds, onClose }: Props) {
   const { t } = useI18n()
   const [view, setView] = useState<View>('library')
   const [editing, setEditing] = useState(false)
@@ -160,10 +162,10 @@ export function InfoTokenCard({ state, scriptId, onClose }: Props) {
   const results = useMemo(() => searchPresets(search, t), [search, t])
 
   const pickerRoles = useMemo<RoleDefinition[]>(() => {
-    return [...new Set(getScript(scriptId).roles)]
+    return [...new Set(scriptRoleIds ?? getScript(scriptId).roles)]
       .map(getRole)
       .filter((r): r is RoleDefinition => !!r)
-  }, [scriptId])
+  }, [scriptId, scriptRoleIds])
 
   const openEditor = (preset: InfoTokenPreset | null) => {
     setMessage(preset ? preset.getDefaultMessage(t) : '')
@@ -175,7 +177,7 @@ export function InfoTokenCard({ state, scriptId, onClose }: Props) {
     setView('card')
   }
 
-  const size = tokenSize(tokens.length + (editing && tokens.length < MAX_TOKENS ? 1 : 0))
+  const size = tokenSize(tokens.length)
 
   // ── Card (reveal + inline edit) ──────────────────────────────────────────────
   // Clean reveal by default; tap the card to show edit chrome, tap the stage
@@ -382,7 +384,7 @@ function TokenPicker({
       onClick={onClose}
     >
       <div
-        className='flex max-h-full w-full max-w-md flex-col gap-3 overflow-hidden rounded-[2rem] bg-parchment-200 p-4 shadow-2xl'
+        className='flex h-[85vh] w-full max-w-5xl flex-col gap-3 overflow-hidden rounded-[2rem] bg-parchment-200 p-4 shadow-2xl sm:p-6'
         onClick={(e) => e.stopPropagation()}
       >
         <div className='flex items-center gap-3 rounded-full bg-white px-5 py-2.5'>
@@ -404,9 +406,9 @@ function TokenPicker({
             </button>
           ))}
         </div>
-        <div className='overflow-y-auto rounded-2xl bg-board-ink/10 p-3'>
+        <div className='min-h-0 flex-1 overflow-y-auto rounded-2xl bg-board-ink/10 p-3'>
           {tab === 'players' ? (
-            <div className='grid grid-cols-2 gap-2'>
+            <div className='grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4'>
               {state.players.map((player) => {
                 const isSelected = selected.some(
                   (s) => s.kind === 'player' && s.playerId === player.id,
@@ -421,7 +423,7 @@ function TokenPicker({
                         : 'border-board-ink/10 bg-white/20'
                     }`}
                   >
-                    <PlayerNameToken name={player.name} size={52} />
+                    <Icon name='user' size='md' className='shrink-0 text-board-ink/60' />
                     <span className='min-w-0 flex-1 truncate font-body text-sm font-bold text-board-ink'>
                       {player.name}
                     </span>
@@ -433,10 +435,11 @@ function TokenPicker({
             <RolePickerGrid
               roles={roles}
               state={state}
-              selected={selected.flatMap((s) => (s.kind === 'role' ? [s.roleId] : []))}
+              selected={[]}
               onSelect={(roleId) => onSelect({ kind: 'role', roleId })}
-              selectionCount={1}
+              selectionCount={MAX_TOKENS}
               surface='light'
+              compact
             />
           )}
         </div>

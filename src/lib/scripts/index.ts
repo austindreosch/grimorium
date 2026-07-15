@@ -1,12 +1,17 @@
 import { ScriptDefinition, ScriptId, RoleDistribution } from './types'
 import { RoleId } from '../roles/types'
+import { CustomCharacter } from '../types'
 import { TeamId } from '../teams/types'
 // Pure data (no React) — safe to import here without a roles<->scripts cycle.
 import { SECTS_AND_VIOLETS } from '../roles/editions/sectsAndViolets'
 import { BAD_MOON_RISING } from '../roles/editions/badMoonRising'
+import { CATALOG_CHARACTERS } from '../roles/editions/catalog'
 
 const SECTS_AND_VIOLETS_IDS = SECTS_AND_VIOLETS.map((r) => r.id as RoleId)
 const BAD_MOON_RISING_IDS = BAD_MOON_RISING.map((r) => r.id as RoleId)
+// Every other official character (Experimental, Fabled, Travellers) — makes
+// them importable + matchable by parseScriptJson.
+const CATALOG_IDS = CATALOG_CHARACTERS.map((r) => r.id as RoleId)
 
 export type { ScriptId, ScriptDefinition, RoleDistribution } from './types'
 export type { GeneratorPreset, GeneratedPool } from './types'
@@ -41,6 +46,7 @@ export const ALL_ROLE_IDS: RoleId[] = [
   'spy',
   ...SECTS_AND_VIOLETS_IDS,
   ...BAD_MOON_RISING_IDS,
+  ...CATALOG_IDS,
 ]
 
 // ============================================================================
@@ -111,9 +117,23 @@ export const SCRIPTS: Record<ScriptId, ScriptDefinition> = {
 /**
  * Replace the in-session imported script's role list (from parseScriptJson).
  * Must be called before navigating into role selection with scriptId 'imported'.
+ * The list is persisted onto each created game (`scriptRoleIds`) so it survives
+ * reload; this holder only bridges the new-game wizard.
  */
 export function setImportedScript(roles: RoleId[]): void {
   SCRIPTS.imported.roles = roles
+}
+
+// Homebrew characters from the most recent import, bridged to createGame the
+// same way as the role list above (then persisted on the game).
+let importedCustoms: CustomCharacter[] = []
+
+export function setImportedCustoms(customs: CustomCharacter[]): void {
+  importedCustoms = customs
+}
+
+export function getImportedCustoms(): CustomCharacter[] {
+  return importedCustoms
 }
 
 // ============================================================================
@@ -177,10 +197,9 @@ export function applyDistributionModifiers(
   for (const modifier of modifiers) {
     if (!modifier) continue
     for (const [teamId, delta] of Object.entries(modifier)) {
-      result[teamId as TeamId] = Math.max(
-        0,
-        result[teamId as TeamId] + delta,
-      )
+      // Distribution only tracks the four bag teams; ignore traveller/fabled.
+      const key = teamId as keyof RoleDistribution
+      if (key in result) result[key] = Math.max(0, result[key] + delta)
     }
   }
 

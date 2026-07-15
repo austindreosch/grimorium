@@ -22,7 +22,7 @@ import {
 import { useRouter } from './hooks/useRouter'
 import { RoleId } from './lib/roles/types'
 import { GameMode } from './lib/types'
-import { getRole } from './lib/roles'
+import { getRole, registerCustomCharacters } from './lib/roles'
 import { ScriptId } from './lib/scripts'
 
 // Internal screens for the new-game wizard (not routed — stays on "/")
@@ -241,6 +241,9 @@ function App() {
       // The useEffect above will redirect; render nothing until then
       return null
     }
+    // Re-hydrate any homebrew characters onto the runtime registry so getRole /
+    // token art resolve them after a reload (the registry itself isn't persisted).
+    registerCustomCharacters(game.customCharacters)
     return (
       <GameScreen
         key={gameId}

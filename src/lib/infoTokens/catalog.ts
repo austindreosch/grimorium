@@ -69,6 +69,12 @@ export const INFO_TOKEN_PRESETS: InfoTokenPreset[] = [
     getLabel: (t) => t.game.infoTokens.presets.thisPlayerIs.label,
     getDefaultMessage: (t) => t.game.infoTokens.presets.thisPlayerIs.message,
   },
+  {
+    id: 'yourGrandchild',
+    category: 'good',
+    getLabel: (t) => t.game.infoTokens.presets.yourGrandchild.label,
+    getDefaultMessage: (t) => t.game.infoTokens.presets.yourGrandchild.message,
+  },
 ]
 
 /** Filter presets by localized label; empty query returns the full catalog. */

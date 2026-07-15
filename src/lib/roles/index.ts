@@ -25,6 +25,12 @@ import Baron from './definition/trouble-brewing/baron'
 import Spy from './definition/trouble-brewing/spy'
 // Sects & Violets + Bad Moon Rising (data-driven, manual-board only)
 import { buildEditionRoleDefinitions } from './editions/defs'
+import { DefaultRoleReveal } from '../../components/items/DefaultRoleReveal'
+import {
+  getCustomCharacter,
+  registerCustomCharacterData,
+} from './customCharacters'
+import type { CustomCharacter } from '../types'
 
 export const ROLES: Record<string, RoleDefinition> = {
   imp: Imp,
@@ -63,8 +69,38 @@ export function getNightOrderRoles(): RoleDefinition[] {
     .sort((a, b) => (a.nightOrder ?? 0) - (b.nightOrder ?? 0))
 }
 
+/** Thin, data-only definition for a homebrew character (run by hand). */
+function buildCustomRoleDefinition(custom: CustomCharacter): RoleDefinition {
+  return {
+    id: custom.id as RoleId,
+    team: custom.team,
+    icon: 'user',
+    nightOrder: null,
+    chaos: 0,
+    RoleReveal: DefaultRoleReveal,
+    NightAction: null,
+  }
+}
+
+/**
+ * Register homebrew characters imported inline in a script. Populates the data
+ * registry + i18n AND injects RoleDefinitions into `ROLES`, so both `getRole`
+ * and direct `ROLES[id]` consumers resolve them. Called at import time and when
+ * a persisted game with custom characters is loaded.
+ */
+export function registerCustomCharacters(chars: CustomCharacter[] | undefined): void {
+  if (!chars) return
+  registerCustomCharacterData(chars)
+  for (const c of chars) ROLES[c.id] = buildCustomRoleDefinition(c)
+}
+
 export function getRole(roleId: string): RoleDefinition | undefined {
-  return ROLES[roleId as RoleId]
+  const known = ROLES[roleId as RoleId]
+  if (known) return known
+  // Fallback for a custom character that was registered into the data registry
+  // but not (yet) the ROLES table — build its definition on the fly.
+  const custom = getCustomCharacter(roleId)
+  return custom ? buildCustomRoleDefinition(custom) : undefined
 }
 
 export function getAllRoles(): RoleDefinition[] {

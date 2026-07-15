@@ -9,9 +9,12 @@ import { EDITION_NIGHT_ORDER } from './roles/editions'
  * numbers, and renders the result. There is no per-script sequence to maintain
  * by hand — adding a new waking character is one row in ROLE_ORDER.
  *
- * The numbers are the canonical Trouble Brewing ordering; only their relative
- * order matters, so gaps are fine and leave room to slot future characters in.
- * Role ids are the app's snake_case ids (fortune_teller, scarlet_woman).
+ * The numbers are the canonical BotC night-order positions (bra1n/townsquare
+ * roles.json `firstNight`/`otherNight`, 0 → null); only their relative order
+ * matters, so gaps are fine and leave room to slot future characters in. To
+ * refresh, re-copy the two integers from that file — the editions below are
+ * already on the same scale. Role ids are the app's snake_case ids
+ * (fortune_teller, scarlet_woman).
  */
 
 export type NightOrderEntry =
@@ -22,20 +25,20 @@ export type NightOrderEntry =
 type NightSlot = { first: number | null; other: number | null }
 
 const ROLE_ORDER: Record<string, NightSlot> = {
-  poisoner: { first: 17, other: 8 },
-  washerwoman: { first: 32, other: null },
-  librarian: { first: 33, other: null },
-  investigator: { first: 34, other: null },
-  chef: { first: 35, other: null },
-  empath: { first: 36, other: 55 },
-  fortune_teller: { first: 37, other: 56 },
-  butler: { first: 38, other: 57 },
-  spy: { first: 46, other: 68 },
-  monk: { first: null, other: 13 },
-  scarlet_woman: { first: null, other: 18 },
-  imp: { first: null, other: 23 },
-  ravenkeeper: { first: null, other: 42 },
-  undertaker: { first: null, other: 53 },
+  poisoner: { first: 17, other: 7 },
+  washerwoman: { first: 33, other: null },
+  librarian: { first: 34, other: null },
+  investigator: { first: 35, other: null },
+  chef: { first: 36, other: null },
+  empath: { first: 37, other: 53 },
+  fortune_teller: { first: 38, other: 54 },
+  butler: { first: 39, other: 67 },
+  spy: { first: 49, other: 68 },
+  monk: { first: null, other: 12 },
+  scarlet_woman: { first: null, other: 19 },
+  imp: { first: null, other: 24 },
+  ravenkeeper: { first: null, other: 52 },
+  undertaker: { first: null, other: 55 },
   // Sects & Violets + Bad Moon Rising (canonical positions, same scale).
   ...EDITION_NIGHT_ORDER,
 }

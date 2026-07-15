@@ -1,9 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useDrag } from '@use-gesture/react'
 import {
   BookmarkSimple,
-  Heart,
-  Info,
   Leaf,
   PencilSimple,
   Swap,
@@ -23,6 +21,7 @@ export type PipView = {
   instance: EffectInstance
   icon: IconName
   iconSrc?: string
+  tokenSrc?: string
   label: string
   tone: 'good' | 'evil' | 'neutral' | 'reminder'
 }
@@ -31,9 +30,16 @@ type Props = {
   player: PlayerState
   role: RoleDefinition | undefined
   size: number
+  /** Board zoom factor — reposition drags are divided by it so the token tracks
+   *  the finger 1:1 even while the whole board layer is scaled. */
+  zoom?: number
   expanded: boolean
   readOnly?: boolean
   pips: PipView[]
+  /** Instance id of a pip currently being dragged off this seat (dim its source). */
+  draggingPipId?: string | null
+  /** True while an in-flight pip is hovering this seat — shows a drop ring. */
+  isDropTarget?: boolean
   /** Committed cosmetic offset for this seat (added by the board). */
   offset: { x: number; y: number }
   boardCenter: { x: number; y: number }
@@ -47,11 +53,12 @@ type Props = {
   onReposition: (dx: number, dy: number) => void
 }
 
-type SatelliteTone = 'black' | 'white' | 'purple' | 'green' | 'blue'
+type SatelliteTone = 'black' | 'white' | 'purple' | 'gray' | 'blue'
 type SatelliteAction = {
   Icon: React.ComponentType<PhosphorIconProps>
   tone: SatelliteTone
   weight?: PhosphorIconProps['weight']
+  dimmed?: boolean
   ariaLabel: string
   onClick: () => void
   angle: number
@@ -69,9 +76,12 @@ export function BoardToken({
   player,
   role,
   size,
+  zoom = 1,
   expanded,
   readOnly = false,
   pips,
+  draggingPipId = null,
+  isDropTarget = false,
   offset,
   boardCenter,
   reminderScale = 0.74,
@@ -86,6 +96,7 @@ export function BoardToken({
   const { t, language } = useI18n()
   const [mode, setMode] = useState<'token' | 'info'>('token')
   const [drag, setDrag] = useState({ x: 0, y: 0 })
+  const lastTapRef = useRef(0)
 
   const alive = isAlive(player)
   // An unassigned seat has no character, so no ability to flip to and reveal.
@@ -98,21 +109,38 @@ export function BoardToken({
     }
   }, [expanded])
 
-  // Disc gestures: drag = cosmetic reposition; tap = expand (satellites). Death is
-  // an explicit satellite, not a disc-region tap — so an inspecting tap never kills
-  // a player by accident. filterTaps keeps a tap from firing mid-drag.
+  // Disc gestures: drag = cosmetic reposition; single tap = expand (satellites);
+  // double tap = flip to the ability info card. Death is an explicit satellite,
+  // not a disc-region tap — so an inspecting tap never kills a player by accident.
+  // filterTaps keeps a tap from firing mid-drag.
   const bindReposition = useDrag(
     ({ tap, last, movement: [mx, my] }) => {
       if (readOnly) return
       if (tap) {
-        onTap()
+        // ponytail: touch double-tap via timing (dblclick is unreliable on
+        // touch). Between the two physical taps React commits onTap, so
+        // `expanded` is fresh here — re-expand only if the first tap collapsed
+        // the seat, so info mode survives the collapse-reset effect.
+        const now = Date.now()
+        if (!unassigned && now - lastTapRef.current < 300) {
+          lastTapRef.current = 0
+          if (!expanded) onTap()
+          setMode('info')
+        } else {
+          lastTapRef.current = now
+          onTap()
+        }
         return
       }
+      // Screen-space drag ÷ board zoom = board-space delta, so the token stays
+      // pinned to the finger no matter how far the board is zoomed in/out.
+      const bx = mx / zoom
+      const by = my / zoom
       if (last) {
         setDrag({ x: 0, y: 0 })
-        if (mx !== 0 || my !== 0) onReposition(mx, my)
+        if (bx !== 0 || by !== 0) onReposition(bx, by)
       } else {
-        setDrag({ x: mx, y: my })
+        setDrag({ x: bx, y: by })
       }
     },
     { filterTaps: true, pointer: { touch: true } },
@@ -136,7 +164,7 @@ export function BoardToken({
     onClick: onEditName,
     angle: -Math.PI / 2, // north
   }
-  const satellites = unassigned
+  const satellites: SatelliteAction[] = unassigned
     ? [
         nameSatellite,
         {
@@ -150,13 +178,6 @@ export function BoardToken({
       ]
     : ([
         {
-          Icon: Info,
-          tone: 'white' as const,
-          ariaLabel: t.game.board.ability,
-          onClick: () => setMode('info'),
-          angle: Math.PI / 2, // south
-        },
-        {
           Icon: Leaf,
           tone: 'purple' as const,
           ariaLabel: t.game.board.allTokens,
@@ -164,9 +185,10 @@ export function BoardToken({
           angle: 0, // east
         },
         {
-          Icon: alive ? BookmarkSimple : Heart,
-          tone: alive ? 'black' as const : 'green' as const,
-          weight: alive ? 'fill' as const : 'bold' as const,
+          Icon: BookmarkSimple,
+          tone: 'gray' as const,
+          weight: 'fill' as const,
+          dimmed: !alive, // dead = disabled look; tap again revives
           ariaLabel: alive ? t.game.board.markDead : t.game.board.revive,
           onClick: onToggleDeath,
           angle: Math.PI, // west
@@ -185,6 +207,8 @@ export function BoardToken({
         height: size,
         zIndex: expanded ? 30 : 10,
         touchAction: 'none',
+        // Re-enable hits — the board's zoom/pan wrapper is pointer-events-none.
+        pointerEvents: 'auto',
       }}
       data-seat-id={player.id}
       onClick={(e) => e.stopPropagation()}
@@ -243,18 +267,35 @@ export function BoardToken({
             const px = size / 2 + Math.cos(baseAngle) * distance - pipSize / 2
             const py = size / 2 + Math.sin(baseAngle) * distance - pipSize / 2
             const pipLayer = 20 + Math.max(0, Math.min(9, Math.round(((size - py) / size) * 9)))
+            // Expand the touch target to ~44px around small pips without moving
+            // the art — the padding is invisible but grabbable.
+            const hitPad = Math.max(0, Math.round((44 - pipSize) / 2))
+            const isSource = pip.instance.id === draggingPipId
             return (
               <div
                 key={pip.instance.id}
-                className='absolute'
-                style={{ left: px, top: py, zIndex: pipLayer, touchAction: 'none' }}
+                className='absolute flex items-center justify-center'
+                style={{
+                  left: px - hitPad,
+                  top: py - hitPad,
+                  padding: hitPad,
+                  zIndex: isSource ? 60 : pipLayer,
+                  touchAction: 'none',
+                }}
                 onPointerDown={(e) => {
                   if (readOnly) return
                   e.stopPropagation()
                   onStartMove(pip.instance, e)
                 }}
               >
-                <ReminderToken icon={pip.icon} iconSrc={pip.iconSrc} label={pip.label} tone={pip.tone} size={pipSize} />
+                <div
+                  className='transition-[opacity,transform] duration-150'
+                  // The in-flight pip is represented by the drag ghost — fade its
+                  // origin so it reads as "lifted out" rather than duplicated.
+                  style={isSource ? { opacity: 0.3, transform: 'scale(0.85)' } : undefined}
+                >
+                  <ReminderToken icon={pip.icon} iconSrc={pip.iconSrc} tokenSrc={pip.tokenSrc} label={pip.label} tone={pip.tone} size={pipSize} />
+                </div>
               </div>
             )
           })}
@@ -273,7 +314,10 @@ export function BoardToken({
               name={player.name}
               size={size}
               dead={!alive}
-              className={cn(expanded && 'ring-2 ring-[#21152E]/80')}
+              className={cn(
+                expanded && 'ring-2 ring-[#21152E]/80',
+                isDropTarget && 'ring-4 ring-board-gold ring-offset-2 ring-offset-board-ink/40',
+              )}
             />
           </div>
 
@@ -292,6 +336,7 @@ export function BoardToken({
                     size={satSize}
                     tone={button.tone}
                     weight={button.weight}
+                    dimmed={button.dimmed}
                     ariaLabel={button.ariaLabel}
                     onClick={button.onClick}
                   />
@@ -310,7 +355,7 @@ const TONE_CLASS: Record<SatelliteTone, string> = {
   black: 'bg-black text-white',
   white: 'bg-white text-black',
   purple: 'bg-purple-700 text-white',
-  green: 'bg-emerald-700 text-white',
+  gray: 'bg-neutral-500 text-black',
   blue: 'bg-board-good text-white',
 }
 
@@ -320,6 +365,7 @@ function Satellite({
   size,
   tone,
   weight = 'bold',
+  dimmed = false,
   ariaLabel,
   onClick,
 }: {
@@ -328,6 +374,7 @@ function Satellite({
   size: number
   tone: keyof typeof TONE_CLASS
   weight?: PhosphorIconProps['weight']
+  dimmed?: boolean
   ariaLabel?: string
   onClick: () => void
 }) {
@@ -355,6 +402,7 @@ function Satellite({
         className={cn(
           'flex items-center justify-center rounded-full shadow-md transition-transform active:scale-90 animate-popover-in',
           TONE_CLASS[tone],
+          dimmed && 'opacity-40',
         )}
         style={{ width: size, height: size }}
       >

@@ -19,6 +19,7 @@ import {
   addPlayer,
   removePlayer,
   renamePlayer,
+  movePlayer,
   getInPlayRoleIds,
   buildInitialEffects,
 } from '../game'
@@ -792,5 +793,37 @@ describe('removePlayer', () => {
     const createdPlayers = after.history[0].data.players as { id: string }[]
     expect(createdPlayers.some((p) => p.id === aliceId)).toBe(true)
     expect(after.history.at(-1)!.type).toBe('player_removed')
+  })
+})
+
+describe('movePlayer', () => {
+  const names = (g: ReturnType<typeof createGame>) =>
+    getCurrentState(g).players.map((p) => p.name)
+
+  const threeSeat = () =>
+    createGame('T', 'trouble-brewing', [
+      { name: 'Alice', roleId: 'villager' },
+      { name: 'Bob', roleId: 'chef' },
+      { name: 'Cara', roleId: 'imp' },
+    ])
+
+  it('swaps a seat clockwise with its neighbour', () => {
+    const game = threeSeat()
+    const aliceId = getCurrentState(game).players[0].id
+    const after = movePlayer(game, aliceId, 1)
+    expect(names(after)).toEqual(['Bob', 'Alice', 'Cara'])
+    expect(after.history.at(-1)!.type).toBe('player_moved')
+  })
+
+  it('wraps counter-clockwise from the first seat to the last', () => {
+    const game = threeSeat()
+    const aliceId = getCurrentState(game).players[0].id
+    const after = movePlayer(game, aliceId, -1)
+    expect(names(after)).toEqual(['Cara', 'Bob', 'Alice'])
+  })
+
+  it('is a no-op for a missing seat', () => {
+    const game = threeSeat()
+    expect(movePlayer(game, 'nope', 1)).toBe(game)
   })
 })

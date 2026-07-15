@@ -78,6 +78,8 @@ function tryGenerateValidPool(
     outsider: [],
     minion: [],
     demon: [],
+    traveller: [],
+    fabled: [],
   }
 
   for (const roleId of script.roles) {

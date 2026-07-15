@@ -1,6 +1,8 @@
 import { ComponentType, ReactNode, useMemo, useState } from 'react'
 import {
   MaskHappy,
+  MoonStars,
+  Sun,
   UsersThree,
   type IconProps as PhosphorIconProps,
 } from '@phosphor-icons/react'
@@ -11,48 +13,130 @@ import { TeamId } from '../../lib/teams'
 import { getNightOrder } from '../../lib/nightOrder'
 import { getRoleName, getRoleAbility, getRoleLines } from '../../lib/i18n/registry'
 import { useI18n } from '../../lib/i18n'
-import { CharacterToken } from './CharacterToken'
-import { PARCHMENT_TEXTURE } from '../../lib/roles/art'
+import { getRoleArt } from '../../lib/roles/art'
 import { Icon } from '../atoms'
 import { cn } from '../../lib/utils'
 
 // Reference panels are full-screen on mobile; on desktop they sit as an
 // isolated sidebar below the top-right controls.
 const PANEL_CLASS = cn(
-  'fixed inset-0 z-50 flex flex-col border-4 border-[#b9a7e8] bg-[#e8dcc0]',
-  'md:bottom-4 md:left-auto md:right-4 md:top-20 md:w-[360px] md:overflow-hidden md:rounded-2xl md:shadow-2xl',
+  'fixed inset-0 z-50 flex flex-col overflow-hidden rounded-lg border-4 border-[#716887] bg-[#e8dcc0]',
+  'md:bottom-4 md:left-auto md:right-4 md:top-20 md:overflow-hidden md:shadow-2xl',
 )
+const SCRIPT_SHEET_TEXTURE = `${import.meta.env.BASE_URL}assets/textures/parchment_texture_a4_lightened.jpg`
 const PANEL_STYLE = {
-  backgroundImage: `linear-gradient(rgba(247,240,224,0.55),rgba(247,240,224,0.55)), url(${PARCHMENT_TEXTURE})`,
+  backgroundImage: `linear-gradient(rgba(247,240,224,0.55),rgba(247,240,224,0.55)), url(${SCRIPT_SHEET_TEXTURE})`,
   backgroundSize: 'cover',
   backgroundPosition: 'center',
 } as const
-const CLEAR_RAIL = 'pr-4'
+const CLEAR_RAIL = ''
 
-const TEAM_ORDER: TeamId[] = ['townsfolk', 'outsider', 'minion', 'demon']
-const TEAM_RAIL: Record<TeamId, string> = {
-  townsfolk: 'border-l-sky-400',
-  outsider: 'border-l-parchment-100',
-  minion: 'border-l-red-500',
-  demon: 'border-l-red-950',
+const TEAM_ORDER: TeamId[] = [
+  'townsfolk',
+  'outsider',
+  'minion',
+  'demon',
+  'traveller',
+  'fabled',
+]
+const TEAM_RAIL_BG: Record<TeamId, string> = {
+  townsfolk: 'bg-board-good',
+  outsider: 'bg-board-goodSoft',
+  minion: 'bg-board-evilSoft',
+  demon: 'bg-board-evil',
+  traveller: 'bg-board-ink/30',
+  fabled: 'bg-board-gold/40',
+}
+// Official script-sheet ink: good roles navy, evil roles red.
+const TEAM_NAME_COLOR: Record<TeamId, string> = {
+  townsfolk: 'text-board-good',
+  outsider: 'text-board-good',
+  traveller: 'text-board-ink/70',
+  fabled: 'text-board-gold',
+  minion: 'text-board-evil',
+  demon: 'text-board-evil',
+}
+
+// Shared list-row typography, tuned to the printed BotC sheet: serif name in
+// team ink, sans ability in dark ink.
+const ROW_NAME_CLASS = 'font-sheet text-[14px] font-bold leading-none'
+const ROW_ABILITY_CLASS = 'font-sheetSans text-[11px] leading-tight text-board-ink'
+const SCRIPT_DIVIDER_CLASS =
+  'relative before:absolute before:left-0 before:right-0 before:top-0 before:h-[2px] before:bg-gradient-to-r before:from-board-ink/30 before:via-board-ink/15 before:to-transparent'
+
+/** A role list row: bare character art (no token disc) + name + ability. */
+function RoleRow({
+  roleId,
+  team,
+  name,
+  ability,
+  fixedHeight = false,
+  inPlay = false,
+}: {
+  roleId: string
+  team: TeamId
+  name: string
+  ability: string
+  fixedHeight?: boolean
+  inPlay?: boolean
+}) {
+  return (
+    <li className={cn('flex items-center gap-2', fixedHeight && 'h-[58px] w-[240px] overflow-hidden')}>
+      <div className='h-9 w-9 shrink-0 overflow-hidden'>
+        <img
+          src={getRoleArt(roleId, team)}
+          alt=''
+          className='h-full w-full scale-[1.45] object-contain'
+          draggable={false}
+        />
+      </div>
+      <div className='min-w-0 flex-1 overflow-hidden'>
+        <p className={cn(ROW_NAME_CLASS, TEAM_NAME_COLOR[team])}>
+          <span>{name}</span>
+          {inPlay && (
+            <span
+              aria-label='In play'
+              className='ml-1.5 inline-block h-1.5 w-1.5 -translate-y-0.5 rounded-full bg-board-gold align-middle shadow-[0_0_4px_rgba(214,174,90,0.85)]'
+            />
+          )}
+        </p>
+        <p className={cn(ROW_ABILITY_CLASS, fixedHeight && 'line-clamp-3')}>{ability}</p>
+      </div>
+    </li>
+  )
 }
 
 function PanelShell({
   title,
   controls,
   hideHeader = false,
+  wide = false,
+  bodyClassName,
+  active,
   onClose,
   children,
 }: {
   title: string
   controls?: ReactNode
   hideHeader?: boolean
+  wide?: boolean
+  bodyClassName?: string
+  active: boolean
   onClose: () => void
   children: ReactNode
 }) {
   const { t } = useI18n()
   return (
-    <div className={PANEL_CLASS} style={PANEL_STYLE}>
+    <div
+      aria-hidden={!active}
+      className={cn(
+        PANEL_CLASS,
+        'transform-gpu transition-[opacity,transform,width] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]',
+        wide ? 'md:w-[550px]' : 'md:w-[360px]',
+        active ? 'translate-x-0 opacity-100' : 'pointer-events-none translate-x-full opacity-0 md:translate-x-5',
+      )}
+      style={PANEL_STYLE}
+    >
       {!hideHeader && (
         <div
           className={cn(
@@ -81,7 +165,7 @@ function PanelShell({
           {controls}
         </div>
       )}
-      <div className={cn('flex-1 overflow-y-auto px-4 py-3', CLEAR_RAIL)}>
+      <div className={cn('flex flex-1 flex-col overflow-y-auto px-2 py-0', bodyClassName, CLEAR_RAIL)}>
         {children}
       </div>
     </div>
@@ -91,46 +175,89 @@ function PanelShell({
 // ─── Script sheet ────────────────────────────────────────────────────────────
 
 export function ScriptSheetPanel({
+  activeRoleIds,
+  active,
   scriptId,
+  scriptRoleIds,
   onClose,
 }: {
-  inPlayRoleIds: string[]
+  activeRoleIds: string[]
+  active: boolean
   scriptId: ScriptId
+  /** Full script role list (persisted for imported scripts); falls back to the static table. */
+  scriptRoleIds?: string[]
   onClose: () => void
 }) {
-  const { language } = useI18n()
+  const { t, language } = useI18n()
+  const activeRoleSet = useMemo(() => new Set(activeRoleIds), [activeRoleIds])
 
   const groups = useMemo(() => {
-    const roles = [...new Set(getScript(scriptId).roles)]
+    const roles = [...new Set(scriptRoleIds ?? getScript(scriptId).roles)]
       .map(getRole)
       .filter((r): r is RoleDefinition => !!r)
     return TEAM_ORDER.map((team) => ({
       team,
       roles: roles.filter((r) => r.team === team),
     })).filter((g) => g.roles.length > 0)
-  }, [scriptId])
+  }, [scriptId, scriptRoleIds])
+  const activeCounts = useMemo(() => {
+    const counts: Record<TeamId, number> = { townsfolk: 0, outsider: 0, minion: 0, demon: 0, traveller: 0, fabled: 0 }
+    for (const roleId of activeRoleIds) {
+      const team = getRole(roleId)?.team
+      if (team) counts[team] += 1
+    }
+    return counts
+  }, [activeRoleIds])
 
   return (
-    <PanelShell title='' hideHeader onClose={onClose}>
+    <PanelShell title='' hideHeader wide active={active} onClose={onClose}>
+      <div className='-mx-2 flex'>
+        <div className={cn('w-2 shrink-0 self-stretch', TEAM_RAIL_BG.townsfolk)} />
+        <div className='flex-1 py-3 pl-3 pr-2 text-center'>
+          <h2 className='font-cinzel text-[25px] leading-none text-[#5a1f2a]'>
+            {t.scripts[scriptId as keyof typeof t.scripts] ?? t.game.panels.script}
+          </h2>
+        </div>
+      </div>
       {groups.map((g) => (
-        <section key={g.team} className={cn('mb-5 border-l-2 pl-3', TEAM_RAIL[g.team])}>
-          <ul className='flex flex-col gap-3'>
-            {g.roles.map((r) => (
-              <li key={r.id} className='flex items-center gap-3'>
-                <CharacterToken roleId={r.id} team={r.team} size={40} centerArt />
-                <div className='min-w-0 flex-1'>
-                  <p className='font-body text-xs font-bold uppercase tracking-wide leading-tight text-board-ink'>
-                    {getRoleName(r.id, language)}
-                  </p>
-                  <p className='font-body text-xs leading-[1.15] text-board-ink/70'>
-                    {getRoleAbility(r.id, language)}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
+        <section
+          key={g.team}
+          className={cn(
+            '-mx-2 flex',
+            SCRIPT_DIVIDER_CLASS,
+          )}
+        >
+          <div className={cn('w-2 shrink-0 self-stretch', TEAM_RAIL_BG[g.team])} />
+          <div className='flex-1 py-3 pl-3 pr-2'>
+            <ul className='grid w-[500px] max-w-full grid-cols-1 gap-x-4 gap-y-2.5 md:grid-cols-2'>
+              {g.roles.map((r) => (
+                <RoleRow
+                  key={r.id}
+                  roleId={r.id}
+                  team={r.team}
+                  name={getRoleName(r.id, language)}
+                  ability={getRoleAbility(r.id, language)}
+                  fixedHeight
+                  inPlay={activeRoleSet.has(r.id)}
+                />
+              ))}
+            </ul>
+          </div>
         </section>
       ))}
+      <div className={cn('-mx-2 mt-auto flex', SCRIPT_DIVIDER_CLASS)}>
+        <div className='w-2 shrink-0 self-stretch bg-board-ink/30' />
+        <div className='flex flex-1 flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 font-sheetSans text-[10px] uppercase tracking-[0.12em] text-board-ink/70'>
+          <span className='text-board-ink'>
+            {activeRoleIds.length} {activeRoleIds.length === 1 ? 'Player' : 'Players'}
+          </span>
+          {TEAM_ORDER.map((team) => (
+            <span key={team} className={TEAM_NAME_COLOR[team]}>
+              {t.teams[team].name} <span>{activeCounts[team]}</span>
+            </span>
+          ))}
+        </div>
+      </div>
     </PanelShell>
   )
 }
@@ -145,9 +272,11 @@ function nightText(roleId: string, language: 'en' | 'es'): string {
 
 export function NightOrderPanel({
   inPlayRoleIds,
+  active,
   onClose,
 }: {
   inPlayRoleIds: string[]
+  active: boolean
   onClose: () => void
 }) {
   const { t, language } = useI18n()
@@ -158,15 +287,24 @@ export function NightOrderPanel({
     [which, inPlayRoleIds],
   )
 
-  const stepLabel: Record<'minion_info' | 'demon_info', string> = {
+  // Fixed narrator steps (Dusk/Dawn markers + Minion/Demon info) share the
+  // parchment-sheet row style; only the icon and copy differ.
+  type MetaId = 'dusk' | 'dawn' | 'minion_info' | 'demon_info'
+  const metaLabel: Record<MetaId, string> = {
+    dusk: t.game.panels.dusk,
+    dawn: t.game.panels.dawn,
     minion_info: t.game.panels.minionInfo,
     demon_info: t.game.panels.demonInfo,
   }
-  const stepHint: Record<'minion_info' | 'demon_info', string> = {
+  const metaHint: Record<MetaId, string> = {
+    dusk: t.game.panels.duskHint,
+    dawn: t.game.panels.dawnHint,
     minion_info: t.game.panels.minionInfoHint,
     demon_info: t.game.panels.demonInfoHint,
   }
-  const stepIcon: Record<'minion_info' | 'demon_info', ComponentType<PhosphorIconProps>> = {
+  const metaIcon: Record<MetaId, ComponentType<PhosphorIconProps>> = {
+    dusk: MoonStars,
+    dawn: Sun,
     minion_info: UsersThree,
     demon_info: MaskHappy,
   }
@@ -192,47 +330,34 @@ export function NightOrderPanel({
   )
 
   return (
-    <PanelShell title={t.game.panels.nightOrder} controls={toggle} hideHeader onClose={onClose}>
+    <PanelShell title={t.game.panels.nightOrder} controls={toggle} hideHeader bodyClassName='px-4 py-3' active={active} onClose={onClose}>
       <ul className='flex flex-col gap-3'>
         {entries.map((e, i) => {
-          if (e.kind === 'marker') {
-            return null
-          }
-          if (e.kind === 'step') {
-            const StepIcon = stepIcon[e.id]
+          if (e.kind === 'marker' || e.kind === 'step') {
+            const MetaIcon = metaIcon[e.id]
             return (
-              <li key={`s-${e.id}-${i}`} className='flex items-center gap-3'>
-                <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-board-ink/30 bg-board-ink/5 text-board-ink/80'>
-                  <StepIcon size={22} weight='regular' />
+              <li key={`m-${e.id}-${i}`} className='flex items-center gap-2'>
+                <div className='flex h-9 w-9 shrink-0 items-center justify-center text-board-ink/70'>
+                  <MetaIcon size={24} weight='regular' />
                 </div>
                 <div className='min-w-0 flex-1'>
-                  <p className='font-body text-xs font-bold uppercase tracking-wide leading-tight text-board-ink'>
-                    {stepLabel[e.id]}
+                  <p className={cn(ROW_NAME_CLASS, 'text-board-ink')}>
+                    {metaLabel[e.id]}
                   </p>
-                  <p className='font-body text-xs leading-[1.15] text-board-ink/70'>
-                    {stepHint[e.id]}
-                  </p>
+                  <p className={ROW_ABILITY_CLASS}>{metaHint[e.id]}</p>
                 </div>
               </li>
             )
           }
+          const team = getRole(e.roleId)?.team ?? 'townsfolk'
           return (
-            <li key={`r-${e.roleId}-${i}`} className='flex items-center gap-3'>
-              <CharacterToken
-                roleId={e.roleId}
-                team={getRole(e.roleId)?.team ?? 'townsfolk'}
-                size={40}
-                centerArt
-              />
-              <div className='min-w-0 flex-1'>
-                <p className='font-body text-xs font-bold uppercase tracking-wide leading-tight text-board-ink'>
-                  {getRoleName(e.roleId, language)}
-                </p>
-                <p className='font-body text-xs leading-[1.15] text-board-ink/70'>
-                  {nightText(e.roleId, language)}
-                </p>
-              </div>
-            </li>
+            <RoleRow
+              key={`r-${e.roleId}-${i}`}
+              roleId={e.roleId}
+              team={team}
+              name={getRoleName(e.roleId, language)}
+              ability={nightText(e.roleId, language)}
+            />
           )
         })}
       </ul>
