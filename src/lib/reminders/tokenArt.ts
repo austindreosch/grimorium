@@ -193,6 +193,23 @@ const ALIASES: Record<string, string> = {
   towncrier__minionsnotnominated: 'towncrier__minionnotnominated',
   minstrel__everyonedrunk: 'minstrel__everyoneisdrunk',
   innkeeper__protected: 'innkeeper__safe',
+  // Experimental / Fabled / Traveller catalog labels that read differently from
+  // the token art filenames.
+  angel__protect: 'angel__protected',
+  fibbin__used: 'fibbin__noability',
+  revolutionary__used: 'revolutionary__registerfalsely',
+  spiritofivory__noextraevil: 'spiritofivory__nomoreevil',
+  widow__knows: 'widow__know',
+  wizard__abilityused: 'wizard__',
+  golem__cannotnominate: 'golem__maynotnominate',
+  banshee__undeadbanshee: 'banshee__hasability',
+  bountyhunter__known: 'bountyhunter__know',
+  noble__seen: 'noble__know',
+  barista__abilitytwice: 'barista__actstwice',
+  balloonist__seentownsfolk: 'balloonist__know',
+  balloonist__seenoutsider: 'balloonist__know2',
+  balloonist__seenminion: 'balloonist__know3',
+  balloonist__seendemon: 'balloonist__know4',
 }
 
 /**

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useDrag } from '@use-gesture/react'
 import {
   BookmarkSimple,
-  Leaf,
+  Note,
   PencilSimple,
   Swap,
   type IconProps as PhosphorIconProps,
@@ -153,6 +153,7 @@ export function BoardToken({
   // Hit-target floor (B4): satellites stay tappable at 20-player density even as
   // the art shrinks — overlap neighbours rather than drop below ~36px.
   const satSize = Math.max(Math.round(size * 0.28), 36)
+  const inwardAngle = Math.atan2(boardCenter.y - offset.y, boardCenter.x - offset.x)
   // Fixed cardinal placement (screen coords, y-down): E = 0, S = π/2, W = π.
   // Name-edit satellite — north on every seat; naming is the first thing a fresh
   // (unassigned) seat needs, and a quick correction on an assigned one.
@@ -178,11 +179,11 @@ export function BoardToken({
       ]
     : ([
         {
-          Icon: Leaf,
+          Icon: Note,
           tone: 'purple' as const,
           ariaLabel: t.game.board.allTokens,
           onClick: onOpenLibrary,
-          angle: 0, // east
+          angle: inwardAngle,
         },
         {
           Icon: BookmarkSimple,
@@ -191,7 +192,7 @@ export function BoardToken({
           dimmed: !alive, // dead = disabled look; tap again revives
           ariaLabel: alive ? t.game.board.markDead : t.game.board.revive,
           onClick: onToggleDeath,
-          angle: Math.PI, // west
+          angle: inwardAngle + Math.PI,
         },
       ] as SatelliteAction[])
   const infoOpensUp = offset.y > boardCenter.y
@@ -354,8 +355,8 @@ export function BoardToken({
 const TONE_CLASS: Record<SatelliteTone, string> = {
   black: 'bg-black text-white',
   white: 'bg-white text-black',
-  purple: 'bg-purple-700 text-white',
-  gray: 'bg-neutral-500 text-black',
+  purple: 'bg-[#2b2146] text-white',
+  gray: 'bg-neutral-700 text-white',
   blue: 'bg-board-good text-white',
 }
 
@@ -383,7 +384,11 @@ function Satellite({
   // clobbering the -50%/-50% offset (which caused the disjoint-then-snap).
   return (
     <div
-      className='absolute'
+      // Dim lives here, not on the button: the button runs animate-popover-in,
+      // whose keyframe drives opacity 0→1 and would clobber an opacity utility
+      // mid-animation (full-color flash, then snap to dim). The wrapper isn't
+      // animated, so its opacity composes cleanly with the button's fade-in.
+      className={cn('absolute', dimmed && 'opacity-40')}
       style={{
         left: `calc(50% + ${pos.x}px)`,
         top: `calc(50% + ${pos.y}px)`,
@@ -400,9 +405,8 @@ function Satellite({
         }}
         onPointerDown={(e) => e.stopPropagation()}
         className={cn(
-          'flex items-center justify-center rounded-full shadow-md transition-transform active:scale-90 animate-popover-in',
+          'flex items-center justify-center rounded-full shadow-[0_10px_22px_rgba(0,0,0,0.55)] transition-transform active:scale-90 animate-popover-in',
           TONE_CLASS[tone],
-          dimmed && 'opacity-40',
         )}
         style={{ width: size, height: size }}
       >

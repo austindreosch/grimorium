@@ -21,7 +21,7 @@ import { cn } from '../../lib/utils'
 // isolated sidebar below the top-right controls.
 const PANEL_CLASS = cn(
   'fixed inset-0 z-50 flex flex-col overflow-hidden rounded-lg border-4 border-[#716887] bg-[#e8dcc0]',
-  'md:bottom-4 md:left-auto md:right-4 md:top-20 md:overflow-hidden md:shadow-2xl',
+  'md:bottom-4 md:left-auto md:right-4 md:top-4 md:overflow-hidden md:shadow-2xl',
 )
 const SCRIPT_SHEET_TEXTURE = `${import.meta.env.BASE_URL}assets/textures/parchment_texture_a4_lightened.jpg`
 const PANEL_STYLE = {
@@ -39,6 +39,7 @@ const TEAM_ORDER: TeamId[] = [
   'traveller',
   'fabled',
 ]
+const FOOTER_TEAM_ORDER: TeamId[] = ['townsfolk', 'outsider', 'minion', 'demon', 'traveller']
 const TEAM_RAIL_BG: Record<TeamId, string> = {
   townsfolk: 'bg-board-good',
   outsider: 'bg-board-goodSoft',
@@ -59,8 +60,8 @@ const TEAM_NAME_COLOR: Record<TeamId, string> = {
 
 // Shared list-row typography, tuned to the printed BotC sheet: serif name in
 // team ink, sans ability in dark ink.
-const ROW_NAME_CLASS = 'font-sheet text-[14px] font-bold leading-none'
-const ROW_ABILITY_CLASS = 'font-sheetSans text-[11px] leading-tight text-board-ink'
+const ROW_NAME_CLASS = 'font-sheet text-[13px] font-bold leading-none'
+const ROW_ABILITY_CLASS = 'font-sheetSans text-[10px] leading-tight text-board-ink'
 const SCRIPT_DIVIDER_CLASS =
   'relative before:absolute before:left-0 before:right-0 before:top-0 before:h-[2px] before:bg-gradient-to-r before:from-board-ink/30 before:via-board-ink/15 before:to-transparent'
 
@@ -96,7 +97,7 @@ function RoleRow({
           {inPlay && (
             <span
               aria-label='In play'
-              className='ml-1.5 inline-block h-1.5 w-1.5 -translate-y-0.5 rounded-full bg-board-gold align-middle shadow-[0_0_4px_rgba(214,174,90,0.85)]'
+              className='ml-1.5 inline-block h-1.5 w-1.5 -translate-y-px rounded-full bg-board-gold align-middle shadow-[0_0_4px_rgba(214,174,90,0.85)]'
             />
           )}
         </p>
@@ -251,7 +252,7 @@ export function ScriptSheetPanel({
           <span className='text-board-ink'>
             {activeRoleIds.length} {activeRoleIds.length === 1 ? 'Player' : 'Players'}
           </span>
-          {TEAM_ORDER.map((team) => (
+          {FOOTER_TEAM_ORDER.map((team) => (
             <span key={team} className={TEAM_NAME_COLOR[team]}>
               {t.teams[team].name} <span>{activeCounts[team]}</span>
             </span>

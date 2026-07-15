@@ -1,8 +1,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { useGesture } from '@use-gesture/react'
+import { useDrag, useGesture } from '@use-gesture/react'
 import { CaretLeft, HandEye, UsersThree, CaretDoubleLeft, CaretDoubleRight, MagnifyingGlassMinus } from '@phosphor-icons/react'
 import { Game, GameState, EffectInstance } from '../../lib/types'
-import { getRole } from '../../lib/roles'
+import { getRole, getAllRoles } from '../../lib/roles'
 import { getInPlayRoleIds, getScriptRoleIds } from '../../lib/game'
 import { ScriptId } from '../../lib/scripts'
 import { getEffect } from '../../lib/effects'
@@ -139,7 +139,7 @@ export function GrimoireBoard({
   const { t, language } = useI18n()
   const containerRef = useRef<HTMLDivElement>(null)
   const bgCanvasRef = useRef<HTMLCanvasElement>(null)
-  useShaderBackground(bgCanvasRef, GRIMOIRE_SHADER, 0.5, 240)
+  useShaderBackground(bgCanvasRef, GRIMOIRE_SHADER, 0.5)
   const [dim, setDim] = useState({ w: 0, h: 0 })
   const [expandedId, setExpandedId] = useState<string | null>(null)
   // The seat whose "add token" button opened the tray. Tapping a token drops it
@@ -196,12 +196,13 @@ export function GrimoireBoard({
   )
 
   // Roles offered in the Change-Character picker: the in-play bag first, with a
-  // toggle to the full script. Both mapped to real RoleDefinitions.
+  // toggle to the ENTIRE character library (every team, script-independent — the
+  // storyteller can seat any character, incl. Travellers & Fabled).
   const pickerRoles = useMemo(() => {
-    const ids = pickerShowAll
-      ? getScriptRoleIds(game)
-      : getInPlayRoleIds(game)
-    return ids.map(getRole).filter((r): r is NonNullable<typeof r> => !!r)
+    if (pickerShowAll) return getAllRoles()
+    return getInPlayRoleIds(game)
+      .map(getRole)
+      .filter((r): r is NonNullable<typeof r> => !!r)
   }, [pickerShowAll, game])
 
   const pickerCurrentRoleId = pickerFor
@@ -321,6 +322,32 @@ export function GrimoireBoard({
     },
   )
 
+  // Edge-swipe zones open/close the reference panels. Pull left to open from
+  // the board edge; pull right on the visible panel tab to close.
+  const bindScriptEdge = useDrag(
+    ({ last, tap, movement: [mx] }) => {
+      if (tap || !last) return
+      if (activePanel === 'script' && mx > 48) setActivePanel(null)
+      else if (!activePanel && mx < -48) setActivePanel('script')
+    },
+    { axis: 'x', filterTaps: true },
+  )
+  const bindNightOrderEdge = useDrag(
+    ({ last, tap, movement: [mx] }) => {
+      if (tap || !last) return
+      if (activePanel === 'nightOrder' && mx > 48) setActivePanel(null)
+      else if (!activePanel && mx < -48) setActivePanel('nightOrder')
+    },
+    { axis: 'x', filterTaps: true },
+  )
+  // Bottom-left tab: swipe up opens the info-tokens menu.
+  const bindInfoTokenEdge = useDrag(
+    ({ last, tap, movement: [, my] }) => {
+      if (!tap && last && my < -48) setInfoTokenOpen(true)
+    },
+    { axis: 'y', filterTaps: true },
+  )
+
   // Shift a seat one place around the circle, clearing the swapped pair's cosmetic
   // offsets so they snap cleanly into their new positions.
   const moveSeat = (playerId: string, dir: 1 | -1) => {
@@ -432,6 +459,50 @@ export function GrimoireBoard({
 
   return (
     <div className='fixed inset-0 z-40 flex flex-col bg-grimoire-darker'>
+      {/* Edge-swipe zones — clear pull tabs marking where each panel lives.
+          Right/top → script sheet; right/bottom → night order. When a panel is
+          open, only its own tab stays visible at the panel edge. */}
+      <>
+        {activePanel !== 'nightOrder' && (
+          <div
+            {...bindScriptEdge()}
+            onClick={() => setActivePanel((p) => (p === 'script' ? null : 'script'))}
+            className='absolute right-0 top-0 z-[60] flex h-1/2 w-7 cursor-grab touch-none select-none items-center justify-end active:cursor-grabbing md:right-[var(--panel-tab-right)]'
+            style={{ '--panel-tab-right': activePanel ? panelReserve : '0px' } as React.CSSProperties}
+            aria-label='Script'
+          >
+            <div className='flex h-24 w-full items-center justify-center rounded-l-lg border-y border-l border-board-gold/40 bg-grimoire-dark/80 shadow-lg'>
+              <Icon name='scrollText' size='sm' className='text-board-gold' />
+            </div>
+          </div>
+        )}
+        {activePanel !== 'script' && (
+          <div
+            {...bindNightOrderEdge()}
+            onClick={() => setActivePanel((p) => (p === 'nightOrder' ? null : 'nightOrder'))}
+            className='absolute bottom-0 right-0 z-[60] flex h-1/2 w-7 cursor-grab touch-none select-none items-center justify-end active:cursor-grabbing md:right-[var(--panel-tab-right)]'
+            style={{ '--panel-tab-right': activePanel ? panelReserve : '0px' } as React.CSSProperties}
+            aria-label='Night order'
+          >
+            <div className='flex h-24 w-full items-center justify-center rounded-l-lg border-y border-l border-board-gold/40 bg-grimoire-dark/80 shadow-lg'>
+              <Icon name='moon' size='sm' className='text-board-gold' />
+            </div>
+          </div>
+        )}
+        {/* Bottom-left tab — swipe up (or tap) opens the info-tokens menu. */}
+        {!activePanel && !readOnly && (
+          <div
+            {...bindInfoTokenEdge()}
+            onClick={() => setInfoTokenOpen(true)}
+            className='absolute bottom-0 left-0 z-[60] flex h-7 w-1/2 cursor-grab touch-none select-none items-end justify-start pl-12 active:cursor-grabbing'
+            aria-label={t.game.infoTokens.showCard}
+          >
+            <div className='flex h-full w-28 items-center justify-center rounded-t-lg border-x border-t border-board-gold/40 bg-grimoire-dark/80 shadow-lg'>
+              <HandEye size={20} weight='regular' className='text-board-gold' />
+            </div>
+          </div>
+        )}
+      </>
       {/* Board surface */}
       <div
         ref={containerRef}
@@ -445,26 +516,6 @@ export function GrimoireBoard({
           setConfirmRemoveId(null)
         }}
       >
-        {/* Centre drop zone — remove target while moving a pip */}
-        <div
-          data-dropzone='remove'
-          className='pointer-events-none absolute left-1/2 top-1/2 flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border-2 border-dashed transition-all duration-150'
-          style={{
-            // Idle center belongs to the add-player cluster; the remove target
-            // only appears while a pip is being moved, and flares when hovered.
-            opacity: dragging ? 1 : 0,
-            borderColor: hoverRemove ? '#E5484D' : '#C9A24B',
-            backgroundColor: hoverRemove ? 'rgba(229,72,77,0.18)' : 'transparent',
-            transform: `translate(-50%, -50%) scale(${hoverRemove ? 1.18 : 1})`,
-          }}
-        >
-          <Icon
-            name='trash'
-            size='md'
-            className={hoverRemove ? 'text-board-evil' : 'text-board-gold/80'}
-          />
-        </div>
-
         {/* Board frame — backdrop + tokens scale/pan together as one surface.
             pointer-events-none so gaps fall through for tap-to-close + pinch;
             each token and edit control re-enables its own hits. */}
@@ -480,6 +531,39 @@ export function GrimoireBoard({
             ref={bgCanvasRef}
             className='pointer-events-none absolute inset-0 h-full w-full'
           />
+          <div
+            data-dropzone='remove'
+            className={cn(
+              'pointer-events-none absolute left-1/2 top-1/2 z-[25] flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border-2 border-dashed transition-[opacity,transform,background-color,border-color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]',
+              dragging ? 'opacity-100' : 'opacity-0',
+            )}
+            style={{
+              borderColor: hoverRemove ? '#E5484D' : '#C9A24B',
+              backgroundColor: hoverRemove ? 'rgba(229,72,77,0.18)' : 'transparent',
+              transform: `translate(-50%, -50%) scale(${dragging ? (hoverRemove ? 1.18 : 1) : 0.92})`,
+            }}
+          >
+            <Icon
+              name='trash'
+              size='md'
+              className={hoverRemove ? 'text-board-evil' : 'text-board-gold/80'}
+            />
+          </div>
+          {!readOnly && !editing && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setInfoTokenOpen(true)
+              }}
+              aria-label={t.game.infoTokens.showCard}
+              className={cn(
+                'absolute left-1/2 top-1/2 z-[24] flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[#3a3654] text-white shadow-lg transition-[opacity,transform] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-90',
+                dragging ? 'pointer-events-none opacity-0 scale-90' : 'pointer-events-auto opacity-100 scale-100',
+              )}
+            >
+              <HandEye size={34} weight='regular' />
+            </button>
+          )}
           {layout.map(({ player, size, reminderScale, x, y }) => {
             const role = getRole(player.roleId)
             return (
@@ -844,75 +928,45 @@ export function GrimoireBoard({
         />
       )}
 
-      <button
-        onClick={onBack}
-        aria-label={t.common.back}
-        className='absolute left-4 top-4 z-[55] flex h-11 w-11 items-center justify-center rounded-full border border-board-gold/30 bg-board-ink/80 text-board-gold/70 shadow-lg transition-transform active:scale-90'
-      >
-        <CaretLeft size={24} weight='bold' />
-      </button>
+      {!readOnly && (
+        <button
+          onClick={() => setEditing((e) => !e)}
+          aria-label={t.game.board.editRoster}
+          aria-pressed={editing}
+          className={cn(
+            'absolute left-4 top-4 z-[55] flex h-11 w-11 items-center justify-center rounded-full text-white shadow-lg transition-transform active:scale-90',
+            editing ? 'bg-[#a78bda]' : 'bg-[#3a3654]',
+          )}
+        >
+          <UsersThree size={22} weight='regular' />
+        </button>
+      )}
 
-      {/* Top-right nav — always visible; swaps reference and editing panels. */}
-      <nav className='absolute right-4 top-4 z-[55] flex items-center gap-3'>
-        {[
-          {
-            id: 'script',
-            icon: <Icon name='scrollText' size='md' />,
-            label: t.game.panels.script,
-            onPress: () => setActivePanel((p) => (p === 'script' ? null : 'script')),
-            active: activePanel === 'script',
-          },
-          {
-            id: 'nightOrder',
-            icon: <Icon name='moon' size='md' />,
-            label: t.game.panels.nightOrder,
-            onPress: () => setActivePanel((p) => (p === 'nightOrder' ? null : 'nightOrder')),
-            active: activePanel === 'nightOrder',
-          },
-          ...(bluffs && !readOnly
-            ? [
-                {
-                  id: 'bluffs',
-                  icon: <Icon name='drama' size='md' />,
-                  label: t.game.board.demonBluffs,
-                  onPress: () => setShowBluffs(true),
-                  active: showBluffs,
-                },
-              ]
-            : []),
-          {
-            id: 'infoToken',
-            icon: <HandEye size={22} weight='regular' />,
-            label: t.game.infoTokens.showCard,
-            onPress: () => setInfoTokenOpen(true),
-            active: infoTokenOpen,
-          },
-          ...(readOnly
-            ? []
-            : [
-                {
-                  id: 'edit',
-                  icon: <UsersThree size={22} weight='regular' />,
-                  label: t.game.board.editRoster,
-                  onPress: () => setEditing((e) => !e),
-                  active: editing,
-                },
-              ]),
-        ].map((item) => (
+      {editing && (
+        <button
+          onClick={onBack}
+          aria-label={t.common.back}
+          className='absolute left-16 top-4 z-[55] flex h-11 w-11 items-center justify-center rounded-full border border-board-gold/30 bg-board-ink/80 text-board-gold/70 shadow-lg transition-transform active:scale-90'
+        >
+          <CaretLeft size={24} weight='bold' />
+        </button>
+      )}
+
+      {bluffs && !readOnly && (
+        <nav className='absolute right-4 top-4 z-[55] flex items-center gap-3'>
           <button
-            key={item.id}
-            onClick={item.onPress}
-            aria-label={item.label}
-            aria-pressed={item.active}
+            onClick={() => setShowBluffs(true)}
+            aria-label={t.game.board.demonBluffs}
+            aria-pressed={showBluffs}
             className={cn(
               'flex h-11 w-11 items-center justify-center rounded-full text-white shadow-lg transition-transform active:scale-90',
-              item.active ? 'bg-[#a78bda]' : 'bg-[#3a3654]',
+              showBluffs ? 'bg-[#a78bda]' : 'bg-[#3a3654]',
             )}
           >
-            {item.icon}
+            <Icon name='drama' size='md' />
           </button>
-        ))}
-      </nav>
+        </nav>
+      )}
     </div>
   )
 }

@@ -1,6 +1,6 @@
 import { useId } from 'react'
 import { UserPlus } from 'lucide-react'
-import { BLANK_TOKEN, getTokenArt, PARCHMENT_TEXTURE, SHROUD_TEXTURE } from '../../lib/roles/art'
+import { BLANK_TOKEN, getRoleArt, getTokenArt, PARCHMENT_TEXTURE, SHROUD_TEXTURE } from '../../lib/roles/art'
 import { isUnassigned } from '../../lib/unassigned'
 import { useI18n } from '../../lib/i18n'
 import { TeamId } from '../../lib/teams'
@@ -28,6 +28,7 @@ type Props = {
  */
 export function CharacterToken({
   roleId,
+  team,
   name,
   nameTone = 'board',
   size = 84,
@@ -43,20 +44,20 @@ export function CharacterToken({
   // Player name — smaller and curved above the disc.
   const nameArc = name ? (
     <svg
-      viewBox='0 0 180 18'
-      className='pointer-events-none absolute bottom-full left-1/2 h-[22%] -translate-x-1/2 overflow-visible'
+      viewBox='0 -10 180 42'
+      className='pointer-events-none absolute bottom-[92%] left-1/2 h-[24%] -translate-x-1/2 overflow-visible'
       style={{ width: Math.max(size * 1.75, name.length * 13) }}
       aria-hidden
     >
       <defs>
-        <path id={`name-arc-${id}`} d='M 8 14 Q 90 6 172 14' fill='none' />
+        <path id={`name-arc-${id}`} d='M 8 30 Q 90 -24 172 30' fill='none' />
       </defs>
       <text
         fill={nameIsCard ? '#17110B' : '#F4EFE6'}
         className='font-body font-bold uppercase'
         style={{
-          fontSize: 12,
-          letterSpacing: '1.2px',
+          fontSize: 14,
+          letterSpacing: '1px',
           textShadow: nameIsCard ? 'none' : '0 1px 3px rgba(0,0,0,0.85)',
         }}
       >
@@ -100,9 +101,10 @@ export function CharacterToken({
   return (
     <Tag
       onClick={onClick}
-      style={{ width: size, height: size }}
+      style={{ width: size, height: size, backgroundImage: `url(${PARCHMENT_TEXTURE})` }}
       className={cn(
         'relative rounded-full shrink-0 select-none',
+        'bg-parchment-200 bg-cover bg-center',
         'shadow-[0_2px_6px_rgba(0,0,0,0.5)]',
         onClick && 'transition-transform active:scale-95',
         className,
@@ -114,7 +116,11 @@ export function CharacterToken({
         alt=''
         draggable={false}
         onError={(e) => {
-          // Custom/unknown role with no baked token — fall back to a blank disc.
+          // Custom/unknown role with no baked token — fall back to generic role art.
+          if (team && !e.currentTarget.src.endsWith('.webp')) {
+            e.currentTarget.src = getRoleArt(roleId, team)
+            return
+          }
           if (e.currentTarget.src.endsWith('_blank.png')) return
           e.currentTarget.src = BLANK_TOKEN
         }}
