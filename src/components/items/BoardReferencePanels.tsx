@@ -1,4 +1,4 @@
-import { ComponentType, ReactNode, useMemo, useState } from 'react'
+import { ComponentType, HTMLAttributes, ReactNode, useMemo, useState } from 'react'
 import {
   MaskHappy,
   MoonStars,
@@ -113,6 +113,7 @@ function PanelShell({
   hideHeader = false,
   wide = false,
   bodyClassName,
+  panelDragProps,
   active,
   onClose,
   children,
@@ -122,6 +123,7 @@ function PanelShell({
   hideHeader?: boolean
   wide?: boolean
   bodyClassName?: string
+  panelDragProps?: HTMLAttributes<HTMLDivElement>
   active: boolean
   onClose: () => void
   children: ReactNode
@@ -129,14 +131,17 @@ function PanelShell({
   const { t } = useI18n()
   return (
     <div
+      {...panelDragProps}
       aria-hidden={!active}
       className={cn(
         PANEL_CLASS,
+        'cursor-grab select-none active:cursor-grabbing',
         'transform-gpu transition-[opacity,transform,width] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]',
         wide ? 'md:w-[550px]' : 'md:w-[360px]',
         active ? 'translate-x-0 opacity-100' : 'pointer-events-none translate-x-full opacity-0 md:translate-x-5',
+        panelDragProps?.className,
       )}
-      style={PANEL_STYLE}
+      style={{ ...PANEL_STYLE, touchAction: 'pan-y', ...panelDragProps?.style }}
     >
       {!hideHeader && (
         <div
@@ -180,6 +185,7 @@ export function ScriptSheetPanel({
   active,
   scriptId,
   scriptRoleIds,
+  panelDragProps,
   onClose,
 }: {
   activeRoleIds: string[]
@@ -187,6 +193,7 @@ export function ScriptSheetPanel({
   scriptId: ScriptId
   /** Full script role list (persisted for imported scripts); falls back to the static table. */
   scriptRoleIds?: string[]
+  panelDragProps?: HTMLAttributes<HTMLDivElement>
   onClose: () => void
 }) {
   const { t, language } = useI18n()
@@ -211,7 +218,7 @@ export function ScriptSheetPanel({
   }, [activeRoleIds])
 
   return (
-    <PanelShell title='' hideHeader wide active={active} onClose={onClose}>
+    <PanelShell title='' hideHeader wide active={active} panelDragProps={panelDragProps} onClose={onClose}>
       <div className='-mx-2 flex'>
         <div className={cn('w-2 shrink-0 self-stretch', TEAM_RAIL_BG.townsfolk)} />
         <div className='flex-1 py-3 pl-3 pr-2 text-center'>
@@ -274,10 +281,12 @@ function nightText(roleId: string, language: 'en' | 'es'): string {
 export function NightOrderPanel({
   inPlayRoleIds,
   active,
+  panelDragProps,
   onClose,
 }: {
   inPlayRoleIds: string[]
   active: boolean
+  panelDragProps?: HTMLAttributes<HTMLDivElement>
   onClose: () => void
 }) {
   const { t, language } = useI18n()
@@ -331,7 +340,7 @@ export function NightOrderPanel({
   )
 
   return (
-    <PanelShell title={t.game.panels.nightOrder} controls={toggle} hideHeader bodyClassName='px-4 py-3' active={active} onClose={onClose}>
+    <PanelShell title={t.game.panels.nightOrder} controls={toggle} hideHeader bodyClassName='px-4 py-3' active={active} panelDragProps={panelDragProps} onClose={onClose}>
       <ul className='flex flex-col gap-3'>
         {entries.map((e, i) => {
           if (e.kind === 'marker' || e.kind === 'step') {

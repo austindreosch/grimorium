@@ -345,6 +345,41 @@ const en: Translations = {
       messagePlaceholder: 'Type a message…',
       chooseToken: 'Choose token',
       noResults: 'No cards',
+      neighborsEvil: 'OF YOUR LIVING NEIGHBORS ARE EVIL',
+      deck: {
+        minions: 'THESE ARE YOUR MINIONS',
+        bluffs:
+          'THESE CHARACTERS ARE NOT IN PLAY. CHOOSE ONE AS A BLUFF, THEN FIND YOUR MINIONS TO SHARE THE OTHERS.',
+        marionette:
+          'THIS PLAYER IS THE MARIONETTE. THEY THINK THEY ARE GOOD, BUT THEY ARE NOT.',
+        lleechHost: 'CHOOSE A PLAYER TO BE YOUR HOST.',
+        demonSecret:
+          'THIS IS THE DEMON. YOU MUST SPEAK TO THEM SECRETLY TO LEARN THE SAFE BLUFFS.',
+        widowGrimoire:
+          "YOU SEE THE GRIMOIRE AND LEARN ALL PLAYERS' ROLES. CHOOSE ONE WHO WILL BE POISONED.",
+        widowInPlay: 'THERE IS A WIDOW IN PLAY',
+        grandchild:
+          'THIS IS YOUR GRANDCHILD. BEWARE OF EVIL LEARNING YOUR ALLIANCE.',
+        outsiderInPlay: 'THIS OUTSIDER IS IN PLAY',
+        outsiderPlayers: 'THE OUTSIDER IS ONE OF THESE TWO PLAYERS',
+        minionInPlay: 'THIS MINION IS IN PLAY',
+        minionPlayers: 'THE MINION IS ONE OF THESE TWO PLAYERS',
+        townsfolkInPlay: 'THIS TOWNSFOLK IS IN PLAY',
+        townsfolkPlayers: 'THE TOWNSFOLK IS ONE OF THESE TWO PLAYERS',
+        fortuneTeller: 'CHOOSE TWO PLAYERS AND LEARN IF EITHER ARE THE DEMON',
+        clockmaker: 'THE DEMON IS THIS MANY STEPS FROM ITS NEAREST MINION',
+        stewardGood: 'YOU KNOW THIS PLAYER IS GOOD',
+        knightNotDemon: 'THESE TWO PLAYERS ARE NOT THE DEMON',
+        chef: 'THIS MANY PAIRS OF EVIL PLAYERS SIT TOGETHER',
+        undertaker: 'THIS CHARACTER WAS EXECUTED TODAY',
+        ravenkeeperChoose: 'CHOOSE A PLAYER TO LEARN THEIR CHARACTER',
+        ravenkeeper: 'THIS IS THEIR CHARACTER',
+        spyGrimoire: 'YOU SEE THE GRIMOIRE AND LEARN EVERY ROLE',
+        impKill: 'CHOOSE A PLAYER TO KILL',
+        poisonerChoose: 'CHOOSE A PLAYER TO POISON',
+        monkProtect: 'CHOOSE A PLAYER TO PROTECT',
+        butlerMaster: 'CHOOSE YOUR MASTER — VOTE ONLY WHEN THEY DO',
+      },
       presets: {
         youAre: { label: 'You Are', message: 'YOU ARE' },
         yourMinions: { label: 'Your Minions', message: 'THESE ARE YOUR MINIONS' },

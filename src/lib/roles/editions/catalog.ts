@@ -622,6 +622,13 @@ export const CATALOG_CHARACTERS: EditionRole[] = [
     reminders: [],
   },
   {
+    id: 'cacklejack', team: 'traveller', icon: 'user',
+    firstNight: null, otherNight: null,
+    name: 'Cacklejack',
+    ability: 'Each day, choose a player: a different player changes character tonight.',
+    reminders: [{ label: 'Not Me', icon: 'circleDot', tone: 'neutral' }],
+  },
+  {
     id: 'gangster', team: 'traveller', icon: 'user',
     firstNight: null, otherNight: null,
     name: 'Gangster',

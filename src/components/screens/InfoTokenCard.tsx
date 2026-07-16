@@ -1,4 +1,5 @@
 import { MouseEvent, ReactNode, useMemo, useState } from 'react'
+import { User } from '@phosphor-icons/react'
 import { GameState } from '../../lib/types'
 import { getRole } from '../../lib/roles'
 import { getScript, ScriptId } from '../../lib/scripts'
@@ -114,7 +115,8 @@ function ChromeButton({
 
 function PlayerNameToken({ name }: { name: string }) {
   return (
-    <div className='shrink-0 px-3 text-center font-read text-5xl font-semibold uppercase leading-none tracking-wide text-white'>
+    <div className='flex shrink-0 items-center justify-center gap-2 px-3 text-center font-sheet text-5xl font-semibold uppercase leading-none tracking-wide text-white'>
+      <User size={34} weight='bold' className='shrink-0' />
       {name}
     </div>
   )

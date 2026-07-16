@@ -350,6 +350,36 @@ export type Translations = {
       messagePlaceholder: string
       chooseToken: string
       noResults: string
+      neighborsEvil: string
+      deck: {
+        minions: string
+        bluffs: string
+        marionette: string
+        lleechHost: string
+        demonSecret: string
+        widowGrimoire: string
+        widowInPlay: string
+        grandchild: string
+        outsiderInPlay: string
+        outsiderPlayers: string
+        minionInPlay: string
+        minionPlayers: string
+        townsfolkInPlay: string
+        townsfolkPlayers: string
+        fortuneTeller: string
+        clockmaker: string
+        stewardGood: string
+        knightNotDemon: string
+        chef: string
+        undertaker: string
+        ravenkeeperChoose: string
+        ravenkeeper: string
+        spyGrimoire: string
+        impKill: string
+        poisonerChoose: string
+        monkProtect: string
+        butlerMaster: string
+      }
       presets: {
         youAre: { label: string; message: string }
         yourMinions: { label: string; message: string }

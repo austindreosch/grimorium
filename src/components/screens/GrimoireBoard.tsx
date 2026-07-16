@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useDrag, useGesture } from '@use-gesture/react'
-import { CaretLeft, HandEye, UsersThree, CaretDoubleLeft, CaretDoubleRight, MagnifyingGlassMinus } from '@phosphor-icons/react'
+import { CaretLeft, HandEye, UsersThree, CaretDoubleLeft, CaretDoubleRight, MagnifyingGlassMinus, Bell, MusicNotes, Shuffle } from '@phosphor-icons/react'
 import { Game, GameState, EffectInstance } from '../../lib/types'
 import { getRole, getAllRoles } from '../../lib/roles'
 import { getInPlayRoleIds, getScriptRoleIds } from '../../lib/game'
@@ -22,6 +22,7 @@ import { ReminderToken } from '../items/ReminderToken'
 import { RolePickerGrid } from '../inputs/RolePickerGrid'
 import { ScriptSheetPanel, NightOrderPanel } from '../items/BoardReferencePanels'
 import { InfoTokenCard } from './InfoTokenCard'
+import { RoleRevealConsole } from './RoleRevealConsole'
 import { isUnassigned } from '../../lib/unassigned'
 import { useShaderBackground } from '../../hooks/useShaderBackground'
 import { GRIMOIRE_SHADER } from '../../lib/grimoireShader'
@@ -58,6 +59,7 @@ type Props = {
   onAddPlayer: () => void
   onRemovePlayer: (playerId: string) => void
   onMovePlayer: (playerId: string, dir: 1 | -1) => void
+  onReshuffleRoles: () => void
   onRenamePlayer: (playerId: string, name: string) => void
   onBack: () => void
 }
@@ -67,6 +69,21 @@ type Props = {
 type DragData = { instance: EffectInstance; fromId: string }
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
+
+/** Animated soundwave bars shown on the music button while night music plays. */
+function EqualizerBars() {
+  return (
+    <span className='flex h-5 items-end gap-[3px]'>
+      {[0, 1, 2, 3].map((i) => (
+        <span
+          key={i}
+          className='h-full w-[3px] rounded-full bg-current'
+          style={{ transformOrigin: 'bottom', animation: `soundbar 0.9s ease-in-out ${i * 0.15}s infinite` }}
+        />
+      ))}
+    </span>
+  )
+}
 
 // Radius (px) of the centre delete target. A moved pip is only removed when
 // released within this of board centre — matching the visible dashed circle —
@@ -133,6 +150,7 @@ export function GrimoireBoard({
   onAddPlayer,
   onRemovePlayer,
   onMovePlayer,
+  onReshuffleRoles,
   onRenamePlayer,
   onBack,
 }: Props) {
@@ -160,10 +178,8 @@ export function GrimoireBoard({
   const [view, setView] = useState({ x: 0, y: 0, z: 1 })
   const viewRef = useRef(view)
   viewRef.current = view
-  // Change-Character picker: which seat is being reassigned, and whether the grid
-  // is showing the full script (vs the in-play bag, the default).
+  // Change-Character picker: which seat is being reassigned (null = closed).
   const [pickerFor, setPickerFor] = useState<string | null>(null)
-  const [pickerShowAll, setPickerShowAll] = useState(false)
   // Two-tap remove confirm — local only, writes no history until the 2nd tap.
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null)
   // Name editor: which seat is being named, plus the working text field value.
@@ -174,13 +190,58 @@ export function GrimoireBoard({
   const [renderedPanel, setRenderedPanel] = useState<'script' | 'nightOrder' | null>(null)
   // Info Token flow (player-facing card library/editor) — full-screen takeover.
   const [infoTokenOpen, setInfoTokenOpen] = useState(false)
+  // Role-reveal console — opened by double-tapping a filled seat. null = closed.
+  const [revealFor, setRevealFor] = useState<string | null>(null)
   // Roster-edit mode — reveals add/remove-player chrome. Off by default so the
   // board reads as a clean surface to show players; toggled from the right rail.
   const [editing, setEditing] = useState(false)
   const editable = !readOnly && editing
 
   const players = state.players
+  const canReshuffleRoles = players.filter((player) => !isUnassigned(player.roleId)).length > 1
   const bluffs = useMemo(() => getDemonBluffs(game), [game])
+
+  // Board sound cues. Lazily created audio. Bell is a one-shot; night music is a
+  // toggle that restarts from 0 on play and fades out over 5s on stop.
+  // Drop the mp3s at public/assets/audio/{nominations,night}.mp3.
+  const bellAudioRef = useRef<HTMLAudioElement | null>(null)
+  const nightAudioRef = useRef<HTMLAudioElement | null>(null)
+  const fadeTimerRef = useRef<number | null>(null)
+  const [nightPlaying, setNightPlaying] = useState(false)
+
+  const playBell = () => {
+    const audio = (bellAudioRef.current ??= new Audio(`${import.meta.env.BASE_URL}assets/audio/nominations.mp3`))
+    audio.currentTime = 0
+    audio.play().catch(() => {})
+  }
+
+  const toggleNight = () => {
+    const audio = (nightAudioRef.current ??= new Audio(`${import.meta.env.BASE_URL}assets/audio/night.mp3`))
+    if (fadeTimerRef.current) {
+      window.clearInterval(fadeTimerRef.current)
+      fadeTimerRef.current = null
+    }
+    if (nightPlaying) {
+      // 5s linear fade, then stop + reset for the next play.
+      const step = audio.volume / 50 // 50 ticks × 100ms = 5s
+      fadeTimerRef.current = window.setInterval(() => {
+        audio.volume = Math.max(0, audio.volume - step)
+        if (audio.volume <= 0.001) {
+          audio.pause()
+          audio.currentTime = 0
+          audio.volume = 1
+          if (fadeTimerRef.current) window.clearInterval(fadeTimerRef.current)
+          fadeTimerRef.current = null
+        }
+      }, 100)
+      setNightPlaying(false)
+    } else {
+      audio.currentTime = 0
+      audio.volume = 1
+      audio.play().catch(() => {})
+      setNightPlaying(true)
+    }
+  }
 
   // The in-play bag drives every reference panel (never the filled seats, so a
   // partially-dealt manual board still lists the whole bag).
@@ -195,15 +256,17 @@ export function GrimoireBoard({
     [players],
   )
 
-  // Roles offered in the Change-Character picker: the in-play bag first, with a
-  // toggle to the ENTIRE character library (every team, script-independent — the
-  // storyteller can seat any character, incl. Travellers & Fabled).
-  const pickerRoles = useMemo(() => {
-    if (pickerShowAll) return getAllRoles()
-    return getInPlayRoleIds(game)
-      .map(getRole)
-      .filter((r): r is NonNullable<typeof r> => !!r)
-  }, [pickerShowAll, game])
+  // Change-Character picker offers two sections: the in-play bag up top (quick
+  // reassign within this game), then the ENTIRE character library below (every
+  // team, script-independent — any character incl. Travellers & Fabled).
+  const pickerInPlayRoles = useMemo(
+    () =>
+      getInPlayRoleIds(game)
+        .map(getRole)
+        .filter((r): r is NonNullable<typeof r> => !!r),
+    [game],
+  )
+  const pickerAllRoles = useMemo(() => getAllRoles(), [])
 
   const pickerCurrentRoleId = pickerFor
     ? players.find((p) => p.id === pickerFor)?.roleId ?? ''
@@ -211,7 +274,6 @@ export function GrimoireBoard({
 
   const closePicker = () => {
     setPickerFor(null)
-    setPickerShowAll(false)
   }
 
   // Saved account roster — read fresh each time the name editor opens.
@@ -582,6 +644,10 @@ export function GrimoireBoard({
                 boardCenter={{ x: dim.w / 2, y: dim.h / 2 }}
                 reminderScale={reminderScale}
                 onTap={() => setExpandedId((cur) => (cur === player.id ? null : player.id))}
+                onReveal={() => {
+                  setRevealFor(player.id)
+                  setExpandedId(null)
+                }}
                 onOpenLibrary={() => setLibraryFor(player.id)}
                 onToggleDeath={() => {
                   onToggleDeath(player.id)
@@ -741,7 +807,7 @@ export function GrimoireBoard({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={t.game.board.search}
-                className='flex-1 bg-transparent font-body text-parchment-100 outline-none placeholder:text-parchment-400/60'
+                className='flex-1 bg-transparent font-body text-sm text-parchment-100 outline-none placeholder:text-parchment-400/60'
               />
               <button onClick={() => setLibraryFor(null)} className='text-parchment-300 active:scale-95'>
                 <Icon name='x' size='md' />
@@ -789,29 +855,47 @@ export function GrimoireBoard({
               <span className='flex-1 font-body text-board-ink'>
                 {t.game.board.changeCharacter}
               </span>
-              <button
-                onClick={() => setPickerShowAll((v) => !v)}
-                className='rounded-full border border-board-ink/15 bg-board-ink/5 px-3 py-1 font-body text-xs text-board-ink/70 active:scale-95'
-              >
-                {pickerShowAll ? t.game.board.inPlay : t.game.board.allCharacters}
-              </button>
               <button onClick={closePicker} className='text-board-ink/60 active:scale-95'>
                 <Icon name='x' size='md' />
               </button>
             </div>
-            <div className='overflow-y-auto p-3'>
-              <RolePickerGrid
-                roles={pickerRoles}
-                state={state}
-                selected={pickerCurrentRoleId ? [pickerCurrentRoleId] : []}
-                onSelect={(roleId) => {
-                  onSetPlayerRole(pickerFor, roleId)
-                  closePicker()
-                }}
-                selectionCount={1}
-                variant='cards'
-                surface='light'
-              />
+            <div className='space-y-4 overflow-y-auto p-3'>
+              {/* In play — quick reassign within this game. */}
+              <div className='space-y-2'>
+                <p className='ml-1 font-tarot text-xs uppercase tracking-wider text-board-ink/60'>
+                  {t.game.board.inPlay}
+                </p>
+                <RolePickerGrid
+                  roles={pickerInPlayRoles}
+                  state={state}
+                  selected={pickerCurrentRoleId ? [pickerCurrentRoleId] : []}
+                  onSelect={(roleId) => {
+                    onSetPlayerRole(pickerFor, roleId)
+                    closePicker()
+                  }}
+                  selectionCount={1}
+                  variant='cards'
+                  surface='light'
+                />
+              </div>
+              {/* Full library — every official character, browse-and-seat. */}
+              <div className='space-y-2 border-t border-board-ink/15 pt-4'>
+                <p className='ml-1 font-tarot text-xs uppercase tracking-wider text-board-ink/60'>
+                  {t.game.board.allCharacters}
+                </p>
+                <RolePickerGrid
+                  roles={pickerAllRoles}
+                  state={state}
+                  selected={pickerCurrentRoleId ? [pickerCurrentRoleId] : []}
+                  onSelect={(roleId) => {
+                    onSetPlayerRole(pickerFor, roleId)
+                    closePicker()
+                  }}
+                  selectionCount={1}
+                  variant='tokens'
+                  surface='light'
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -906,6 +990,7 @@ export function GrimoireBoard({
           active={activePanel === 'script'}
           scriptId={game.scriptId as ScriptId}
           scriptRoleIds={getScriptRoleIds(game)}
+          panelDragProps={bindScriptEdge()}
           onClose={() => setActivePanel(null)}
         />
       )}
@@ -913,6 +998,7 @@ export function GrimoireBoard({
         <NightOrderPanel
           active={activePanel === 'nightOrder'}
           inPlayRoleIds={inPlayRoleIds}
+          panelDragProps={bindNightOrderEdge()}
           onClose={() => setActivePanel(null)}
         />
       )}
@@ -927,6 +1013,22 @@ export function GrimoireBoard({
           onClose={() => setInfoTokenOpen(false)}
         />
       )}
+
+      {/* Role-reveal console — double-tap a seat to show that player their role
+          plus the auto-filled info-token deck. Ephemeral; writes no history. */}
+      {revealFor &&
+        (() => {
+          const player = players.find((p) => p.id === revealFor)
+          return player ? (
+            <RoleRevealConsole
+              player={player}
+              state={state}
+              gameId={game.id}
+              scriptRoleIds={getScriptRoleIds(game)}
+              onClose={() => setRevealFor(null)}
+            />
+          ) : null
+        })()}
 
       {!readOnly && (
         <button
@@ -943,13 +1045,47 @@ export function GrimoireBoard({
       )}
 
       {editing && (
-        <button
-          onClick={onBack}
-          aria-label={t.common.back}
-          className='absolute left-16 top-4 z-[55] flex h-11 w-11 items-center justify-center rounded-full border border-board-gold/30 bg-board-ink/80 text-board-gold/70 shadow-lg transition-transform active:scale-90'
-        >
-          <CaretLeft size={24} weight='bold' />
-        </button>
+        <>
+          <button
+            onClick={onBack}
+            aria-label={t.common.back}
+            className='absolute left-16 top-4 z-[55] flex h-11 w-11 items-center justify-center rounded-full border border-board-gold/30 bg-board-ink/80 text-board-gold/70 shadow-lg transition-transform active:scale-90'
+          >
+            <CaretLeft size={24} weight='bold' />
+          </button>
+          <button
+            onClick={onReshuffleRoles}
+            disabled={!canReshuffleRoles}
+            aria-label='Reshuffle character tokens'
+            className='absolute left-28 top-4 z-[55] flex h-11 w-11 items-center justify-center rounded-full border border-board-gold/30 bg-board-ink/80 text-board-gold/70 shadow-lg transition-transform active:scale-90 disabled:cursor-not-allowed disabled:opacity-35'
+          >
+            <Shuffle size={22} weight='bold' />
+          </button>
+        </>
+      )}
+
+      {/* Sound cues — return-to-circle bell + nighttime music toggle. */}
+      {!readOnly && (
+        <div className='absolute left-4 top-[68px] z-[55] flex flex-col gap-2'>
+          <button
+            onClick={playBell}
+            aria-label='Call players to the circle'
+            className='flex h-11 w-11 items-center justify-center rounded-full bg-[#3a3654] text-board-gold shadow-lg transition-transform active:scale-90'
+          >
+            <Bell size={22} weight='regular' />
+          </button>
+          <button
+            onClick={toggleNight}
+            aria-label={nightPlaying ? 'Stop nighttime music' : 'Play nighttime music'}
+            aria-pressed={nightPlaying}
+            className={cn(
+              'flex h-11 w-11 items-center justify-center rounded-full text-board-gold shadow-lg transition-[transform,background-color] active:scale-90',
+              nightPlaying ? 'bg-board-gold/25 ring-2 ring-board-gold/60' : 'bg-[#3a3654]',
+            )}
+          >
+            {nightPlaying ? <EqualizerBars /> : <MusicNotes size={22} weight='regular' />}
+          </button>
+        </div>
       )}
 
       {bluffs && !readOnly && (

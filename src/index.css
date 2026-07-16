@@ -63,6 +63,12 @@
   font-weight: 400 700;
   font-display: swap;
 }
+@font-face {
+  font-family: 'Della Respira';
+  src: url('/grimorium/assets/fonts/DellaRespira.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+}
 
 @tailwind base;
 @tailwind components;
@@ -116,6 +122,16 @@
    ═══════════════════════════════════════════════════════════════ */
 
 /* Card summon (entrance) — plays once on the wrapper */
+@keyframes soundbar {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
 @keyframes cardSummon {
   0% {
     opacity: 0;

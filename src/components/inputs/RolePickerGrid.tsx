@@ -127,9 +127,12 @@ export function RolePickerGrid({
     return t.teams[key]?.name ?? teamId
   }
 
+  // Only multi-select (count > 1) blocks at max. Count === 1 is radio behavior —
+  // tapping any card replaces the current pick, so nothing is ever disabled.
   const isAtMax =
     selectionCount !== null &&
     selectionCount !== undefined &&
+    selectionCount > 1 &&
     selected.length >= selectionCount
 
   const gridClass = cn(

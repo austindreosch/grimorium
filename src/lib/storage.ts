@@ -237,3 +237,46 @@ export function clearBoardPosition(gameId: string, playerId: string): void {
   delete positions[playerId]
   localStorage.setItem(BOARD_POSITIONS_KEY, JSON.stringify(all))
 }
+
+// ============================================================================
+// REVEAL CONSOLE STATE
+// ============================================================================
+// Per-game, per-player storyteller choices in the role-reveal console: the
+// "YOU ARE" swap and the info-token deck fills. Never written to game.history —
+// purely a projection aid so reopening a seat shows what was last displayed.
+
+const REVEAL_STATE_KEY = 'grimoire_reveal_state'
+
+export type RevealState = {
+  /** The swapped "YOU ARE" character, if changed from the seat's real role. */
+  displayRoleId?: string
+  /** Deck-slot fills keyed by `${slideId}:${index}` (roleId or playerId). */
+  tokenOverrides: Record<string, string>
+}
+
+function getAllRevealState(): Record<string, Record<string, RevealState>> {
+  const data = localStorage.getItem(REVEAL_STATE_KEY)
+  if (!data) return {}
+  try {
+    return JSON.parse(data) as Record<string, Record<string, RevealState>>
+  } catch {
+    return {}
+  }
+}
+
+export function getRevealState(
+  gameId: string,
+  playerId: string,
+): RevealState | undefined {
+  return getAllRevealState()[gameId]?.[playerId]
+}
+
+export function setRevealState(
+  gameId: string,
+  playerId: string,
+  reveal: RevealState,
+): void {
+  const all = getAllRevealState()
+  ;(all[gameId] ??= {})[playerId] = reveal
+  localStorage.setItem(REVEAL_STATE_KEY, JSON.stringify(all))
+}

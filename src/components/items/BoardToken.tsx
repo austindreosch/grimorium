@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useDrag } from '@use-gesture/react'
 import {
   BookmarkSimple,
@@ -10,7 +10,6 @@ import {
 import { PlayerState, EffectInstance, isAlive } from '../../lib/types'
 import { isUnassigned } from '../../lib/unassigned'
 import { RoleDefinition } from '../../lib/roles/types'
-import { getRoleAbility } from '../../lib/i18n/registry'
 import { IconName } from '../atoms/icon'
 import { useI18n } from '../../lib/i18n'
 import { cn } from '../../lib/utils'
@@ -45,6 +44,8 @@ type Props = {
   boardCenter: { x: number; y: number }
   reminderScale?: number
   onTap: () => void
+  /** Double-tap a filled seat: open the full-screen role-reveal console. */
+  onReveal: () => void
   onOpenLibrary: () => void
   onToggleDeath: () => void
   onChangeCharacter: () => void
@@ -86,6 +87,7 @@ export function BoardToken({
   boardCenter,
   reminderScale = 0.74,
   onTap,
+  onReveal,
   onOpenLibrary,
   onToggleDeath,
   onChangeCharacter,
@@ -93,24 +95,16 @@ export function BoardToken({
   onStartMove,
   onReposition,
 }: Props) {
-  const { t, language } = useI18n()
-  const [mode, setMode] = useState<'token' | 'info'>('token')
+  const { t } = useI18n()
   const [drag, setDrag] = useState({ x: 0, y: 0 })
   const lastTapRef = useRef(0)
 
   const alive = isAlive(player)
-  // An unassigned seat has no character, so no ability to flip to and reveal.
+  // An unassigned seat has no character, so no reveal to open.
   const unassigned = isUnassigned(player.roleId)
 
-  // Collapsing the seat (board sets expanded=false) resets its transient UI.
-  useEffect(() => {
-    if (!expanded) {
-      setMode('token')
-    }
-  }, [expanded])
-
   // Disc gestures: drag = cosmetic reposition; single tap = expand (satellites);
-  // double tap = flip to the ability info card. Death is an explicit satellite,
+  // double tap = open the role-reveal console. Death is an explicit satellite,
   // not a disc-region tap — so an inspecting tap never kills a player by accident.
   // filterTaps keeps a tap from firing mid-drag.
   const bindReposition = useDrag(
@@ -118,14 +112,12 @@ export function BoardToken({
       if (readOnly) return
       if (tap) {
         // ponytail: touch double-tap via timing (dblclick is unreliable on
-        // touch). Between the two physical taps React commits onTap, so
-        // `expanded` is fresh here — re-expand only if the first tap collapsed
-        // the seat, so info mode survives the collapse-reset effect.
+        // touch). The first tap already ran onTap (expand); a second within
+        // 300ms opens the reveal console instead.
         const now = Date.now()
         if (!unassigned && now - lastTapRef.current < 300) {
           lastTapRef.current = 0
-          if (!expanded) onTap()
-          setMode('info')
+          onReveal()
         } else {
           lastTapRef.current = now
           onTap()
@@ -195,7 +187,6 @@ export function BoardToken({
           angle: inwardAngle + Math.PI,
         },
       ] as SatelliteAction[])
-  const infoOpensUp = offset.y > boardCenter.y
 
   return (
     <div
@@ -214,47 +205,7 @@ export function BoardToken({
       data-seat-id={player.id}
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Info card — the "flip the token over" ability view (never for a blank seat) */}
-      {mode === 'info' && !unassigned ? (
-        <div
-          className={cn(
-            'absolute left-1/2 -translate-x-1/2 rounded-2xl border border-board-gold/40 bg-parchment-200 bg-cover p-3 pt-10 shadow-xl',
-            infoOpensUp ? 'bottom-0' : 'top-0',
-          )}
-          style={{ width: Math.max(180, size * 2.1), zIndex: 40 }}
-        >
-          <div className='absolute left-1/2 top-0 flex -translate-x-1/2 -translate-y-1/2 gap-2'>
-            <button
-              onClick={onChangeCharacter}
-              className='flex h-8 w-8 items-center justify-center rounded-full bg-board-good text-white shadow-md active:scale-95'
-              aria-label={t.game.board.changeCharacter}
-            >
-              <Swap size={18} weight='bold' />
-            </button>
-            <button
-              onClick={onEditName}
-              className='flex h-8 w-8 items-center justify-center rounded-full bg-white text-board-ink shadow-md active:scale-95'
-              aria-label={t.game.board.editName}
-            >
-              <PencilSimple size={18} weight='bold' />
-            </button>
-          </div>
-          <div className='flex flex-col items-center gap-2'>
-            {/* The real character token (art only — its curved name is enough) */}
-            <CharacterToken
-              roleId={player.roleId}
-              team={role?.team ?? 'townsfolk'}
-              name={player.name}
-              nameTone='card'
-              size={Math.round(size * 0.9)}
-            />
-            <p className='text-center font-read text-base leading-snug text-board-ink'>
-              {getRoleAbility(player.roleId, language)}
-            </p>
-          </div>
-        </div>
-      ) : (
-        <>
+      <>
           {/* Orbiting reminder pips */}
           {pips.map((pip, i) => {
             // Stack pips in a short line toward board center. ponytail: compact
@@ -347,7 +298,6 @@ export function BoardToken({
           )}
 
         </>
-      )}
     </div>
   )
 }

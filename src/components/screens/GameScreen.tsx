@@ -51,6 +51,7 @@ import {
 } from '../../lib/pipeline/types'
 import { saveGame, addToRoster } from '../../lib/storage'
 import { useI18n } from '../../lib/i18n'
+import { isUnassigned } from '../../lib/unassigned'
 import { RoleRevelationScreen } from './RoleRevelationScreen'
 import { NightDashboard } from './NightDashboard'
 import { DayPhase } from './DayPhase'
@@ -600,6 +601,21 @@ export function GameScreen({ initialGame, onMainMenu }: Props) {
     updateGame(movePlayer(game, playerId, dir))
   }
 
+  const handleReshuffleRoles = () => {
+    const assignedPlayers = state.players.filter((player) => !isUnassigned(player.roleId))
+    if (assignedPlayers.length < 2) return
+
+    const roleIds = assignedPlayers.map((player) => player.roleId)
+    const offset = Math.floor(Math.random() * (roleIds.length - 1)) + 1
+    let nextGame = game
+
+    assignedPlayers.forEach((player, index) => {
+      nextGame = setPlayerRole(nextGame, player.id, roleIds[(index + offset) % roleIds.length])
+    })
+
+    updateGame(nextGame)
+  }
+
   // Rename a seat and remember the name in the account roster for tap-to-add.
   const handleRenamePlayer = (playerId: string, name: string) => {
     updateGame(renamePlayer(game, playerId, name))
@@ -843,6 +859,7 @@ export function GameScreen({ initialGame, onMainMenu }: Props) {
             onAddPlayer={handleAddPlayer}
             onRemovePlayer={handleRemovePlayer}
             onMovePlayer={handleMovePlayer}
+            onReshuffleRoles={handleReshuffleRoles}
             onRenamePlayer={handleRenamePlayer}
             onBack={() =>
               screen.returnTo ? setScreen(screen.returnTo) : onMainMenu()

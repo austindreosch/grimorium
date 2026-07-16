@@ -13,6 +13,7 @@ export default {
         tarot: ['"Dumbledor"', '"Cinzel"', 'serif'],
         token: ['"Dumbledor"', '"Cinzel"', 'serif'],
         cinzel: ['"Cinzel"', 'serif'],
+        respira: ['"Della Respira"', 'serif'],
         // Old-print flavour text.
         flavor: ['"IM Fell English"', 'Georgia', 'serif'],
         // Reading body copy.

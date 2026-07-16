@@ -347,6 +347,41 @@ const es: Translations = {
       messagePlaceholder: 'Escribe un mensaje…',
       chooseToken: 'Elegir ficha',
       noResults: 'Sin cartas',
+      neighborsEvil: 'DE TUS VECINOS VIVOS SON MALVADOS',
+      deck: {
+        minions: 'ESTOS SON TUS ESBIRROS',
+        bluffs:
+          'ESTOS PERSONAJES NO ESTÁN EN JUEGO. ELIGE UNO COMO FAROL, LUEGO BUSCA A TUS ESBIRROS PARA COMPARTIR LOS OTROS.',
+        marionette:
+          'ESTE JUGADOR ES LA MARIONETA. CREEN QUE SON BUENOS, PERO NO LO SON.',
+        lleechHost: 'ELIGE UN JUGADOR PARA SER TU ANFITRIÓN.',
+        demonSecret:
+          'ESTE ES EL DEMONIO. DEBES HABLAR CON ELLOS EN SECRETO PARA CONOCER LOS FAROLES SEGUROS.',
+        widowGrimoire:
+          'VES EL GRIMORIO Y APRENDES LOS ROLES DE TODOS. ELIGE A UNO QUE SERÁ ENVENENADO.',
+        widowInPlay: 'HAY UNA VIUDA EN JUEGO',
+        grandchild:
+          'ESTE ES TU NIETO. CUIDADO CON QUE EL MAL DESCUBRA TU ALIANZA.',
+        outsiderInPlay: 'ESTE FORASTERO ESTÁ EN JUEGO',
+        outsiderPlayers: 'EL FORASTERO ES UNO DE ESTOS DOS JUGADORES',
+        minionInPlay: 'ESTE ESBIRRO ESTÁ EN JUEGO',
+        minionPlayers: 'EL ESBIRRO ES UNO DE ESTOS DOS JUGADORES',
+        townsfolkInPlay: 'ESTE ALDEANO ESTÁ EN JUEGO',
+        townsfolkPlayers: 'EL ALDEANO ES UNO DE ESTOS DOS JUGADORES',
+        fortuneTeller: 'ELIGE DOS JUGADORES Y AVERIGUA SI ALGUNO ES EL DEMONIO',
+        clockmaker: 'EL DEMONIO ESTÁ A ESTOS PASOS DE SU ESBIRRO MÁS CERCANO',
+        stewardGood: 'SABES QUE ESTE JUGADOR ES BUENO',
+        knightNotDemon: 'ESTOS DOS JUGADORES NO SON EL DEMONIO',
+        chef: 'TANTAS PAREJAS DE JUGADORES MALVADOS ESTÁN JUNTAS',
+        undertaker: 'ESTE PERSONAJE FUE EJECUTADO HOY',
+        ravenkeeperChoose: 'ELIGE UN JUGADOR PARA CONOCER SU PERSONAJE',
+        ravenkeeper: 'ESTE ES SU PERSONAJE',
+        spyGrimoire: 'VES EL GRIMORIO Y APRENDES CADA ROL',
+        impKill: 'ELIGE UN JUGADOR PARA MATAR',
+        poisonerChoose: 'ELIGE UN JUGADOR PARA ENVENENAR',
+        monkProtect: 'ELIGE UN JUGADOR PARA PROTEGER',
+        butlerMaster: 'ELIGE A TU AMO — VOTA SOLO CUANDO ELLOS VOTEN',
+      },
       presets: {
         youAre: { label: 'Tú eres', message: 'TÚ ERES' },
         yourMinions: { label: 'Tus secuaces', message: 'ESTOS SON TUS SECUACES' },
