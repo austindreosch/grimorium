@@ -59,6 +59,25 @@ export function isMalfunctioning(player: {
 }
 
 /**
+ * The player's true role for the storyteller's eyes (the Grimoire board).
+ *
+ * Roles like the Drunk change `roleId` to a believed character and stash the
+ * ground truth in an effect's `data.actualRole`. The player-facing reveal shows
+ * the believed `roleId`; the board shows this true role so the storyteller
+ * tracks reality. Falls back to `roleId` when nothing is hidden.
+ */
+export function getTrueRoleId(player: {
+  roleId: string
+  effects: Array<{ data?: Record<string, unknown> }>
+}): string {
+  for (const e of player.effects) {
+    const actual = e.data?.actualRole
+    if (typeof actual === 'string') return actual
+  }
+  return player.roleId
+}
+
+/**
  * Resolves the semantic type of an effect instance for badge styling.
  * Same effect can have different types (e.g. safe from Soldier vs Monk).
  */
