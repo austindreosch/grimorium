@@ -34,21 +34,15 @@ type PickerTab = 'players' | 'characters'
 // reveal is a physical prop the storyteller flashes, not a board panel.
 const STAGE = '#39333f' // desaturated plum backdrop
 const CARD = '#6d6488' // raised lavender card
-const KEYWORD = '#e8a94a' // gold highlight on the last word
 const MAX_TOKENS = 3
 
 const CARD_TOKEN_SIZE = 164
 
-/** Split the message so the trailing word can be gilded (matches the mockups). */
 function GildedMessage({ text }: { text: string }) {
-  const words = text.trim().split(/\s+/).filter(Boolean)
-  if (words.length === 0) return null
-  const last = words.pop() as string
-  const head = words.join(' ')
+  if (!text.trim()) return null
   return (
     <p className='text-center font-read text-5xl font-semibold uppercase leading-[1.1] tracking-wide text-white sm:text-6xl'>
-      {head && <span>{head} </span>}
-      <span style={{ color: KEYWORD }}>{last}</span>
+      {text}
     </p>
   )
 }
@@ -298,7 +292,6 @@ export function InfoTokenCard({ state, scriptId, scriptRoleIds, onClose }: Props
         <div className='flex items-center gap-3 rounded-full bg-white px-5 py-3 shadow-inner'>
           <Icon name='search' size='sm' className='text-board-ink/50' />
           <input
-            autoFocus
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t.game.infoTokens.searchPlaceholder}
@@ -348,15 +341,11 @@ export function InfoTokenCard({ state, scriptId, scriptRoleIds, onClose }: Props
   )
 }
 
-/** A gilded headline sized for the library tile. */
+/** A headline sized for the library tile. */
 function TilePreview({ text }: { text: string }) {
-  const words = text.trim().split(/\s+/).filter(Boolean)
-  const last = words.pop() ?? ''
-  const head = words.join(' ')
   return (
     <span className='font-read text-lg font-semibold uppercase leading-tight tracking-wide text-white'>
-      {head && <span>{head} </span>}
-      <span style={{ color: KEYWORD }}>{last}</span>
+      {text}
     </span>
   )
 }

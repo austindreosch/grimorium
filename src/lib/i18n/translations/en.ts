@@ -345,7 +345,7 @@ const en: Translations = {
       messagePlaceholder: 'Type a message…',
       chooseToken: 'Choose token',
       noResults: 'No cards',
-      neighborsEvil: 'OF YOUR LIVING NEIGHBORS ARE EVIL',
+      neighborsEvil: 'NUMBER OF YOUR LIVING NEIGHBORS ARE EVIL',
       deck: {
         minions: 'THESE ARE YOUR MINIONS',
         bluffs:
@@ -376,6 +376,9 @@ const en: Translations = {
         ravenkeeper: 'THIS IS THEIR CHARACTER',
         spyGrimoire: 'YOU SEE THE GRIMOIRE AND LEARN EVERY ROLE',
         impKill: 'CHOOSE A PLAYER TO KILL',
+        lleechKill: 'CHOOSE A PLAYER TO KILL',
+        assassinKill: 'CHOOSE A PLAYER TO KILL',
+        sageDemon: 'THE DEMON IS ONE OF THESE TWO PLAYERS',
         poisonerChoose: 'CHOOSE A PLAYER TO POISON',
         monkProtect: 'CHOOSE A PLAYER TO PROTECT',
         butlerMaster: 'CHOOSE YOUR MASTER — VOTE ONLY WHEN THEY DO',

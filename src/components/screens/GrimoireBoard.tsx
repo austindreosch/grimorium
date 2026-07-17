@@ -803,7 +803,6 @@ export function GrimoireBoard({
             <div className='flex items-center gap-2 border-b border-purple-600/30 p-3'>
               <Icon name='search' size='sm' className='text-purple-300' />
               <input
-                autoFocus
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={t.game.board.search}

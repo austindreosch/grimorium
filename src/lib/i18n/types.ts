@@ -376,6 +376,9 @@ export type Translations = {
         ravenkeeper: string
         spyGrimoire: string
         impKill: string
+        lleechKill: string
+        assassinKill: string
+        sageDemon: string
         poisonerChoose: string
         monkProtect: string
         butlerMaster: string

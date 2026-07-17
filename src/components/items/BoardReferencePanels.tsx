@@ -13,7 +13,7 @@ import { TeamId } from '../../lib/teams'
 import { getNightOrder } from '../../lib/nightOrder'
 import { getRoleName, getRoleAbility, getRoleLines } from '../../lib/i18n/registry'
 import { useI18n } from '../../lib/i18n'
-import { getRoleArt } from '../../lib/roles/art'
+import { getRoleArt, hasRoleArt, getTokenArt, BLANK_TOKEN } from '../../lib/roles/art'
 import { Icon } from '../atoms'
 import { cn } from '../../lib/utils'
 
@@ -84,12 +84,26 @@ function RoleRow({
   return (
     <li className={cn('flex items-center gap-2', fixedHeight && 'h-[58px] w-[240px] overflow-hidden')}>
       <div className='h-9 w-9 shrink-0 overflow-hidden'>
-        <img
-          src={getRoleArt(roleId, team)}
-          alt=''
-          className='h-full w-full scale-[1.45] object-contain'
-          draggable={false}
-        />
+        {/* Bare cropped art for roles that have it (TB); real token PNG for
+            every other edition, which ships only as a composed token. */}
+        {hasRoleArt(roleId) ? (
+          <img
+            src={getRoleArt(roleId, team)}
+            alt=''
+            className='h-full w-full scale-[1.45] object-contain'
+            draggable={false}
+          />
+        ) : (
+          <img
+            src={getTokenArt(roleId)}
+            alt=''
+            className='h-full w-full object-contain'
+            draggable={false}
+            onError={(e) => {
+              e.currentTarget.src = BLANK_TOKEN
+            }}
+          />
+        )}
       </div>
       <div className='min-w-0 flex-1 overflow-hidden'>
         <p className={cn(ROW_NAME_CLASS, TEAM_NAME_COLOR[team])}>

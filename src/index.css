@@ -94,6 +94,9 @@
     min-height: var(--app-height);
     max-height: var(--app-height);
     overflow: hidden;
+    /* Kill horizontal overscroll -> browser back/forward nav on touch/trackpad.
+       Must be on the root (html), not just body, or the swipe still fires. */
+    overscroll-behavior: none;
   }
 
   body {

@@ -3,7 +3,6 @@ import { useDrag } from '@use-gesture/react'
 import { ArrowsClockwise, UsersThree } from '@phosphor-icons/react'
 import { GameState, PlayerState } from '../../lib/types'
 import { getRole } from '../../lib/roles'
-import { isEvilTeam } from '../../lib/teams'
 import { useI18n } from '../../lib/i18n'
 import { deckForPlayer, DeckSlide, DeckToken } from '../../lib/infoTokens/deck'
 import { RoleDefinition } from '../../lib/roles/types'
@@ -37,16 +36,11 @@ function formatPlayerName(name: string) {
     .replace(/\b\p{L}/gu, (letter) => letter.toLocaleUpperCase())
 }
 
-/** Split the message so the trailing word is gilded (matches the mockups). */
 function GildedMessage({ text }: { text: string }) {
-  const words = text.trim().split(/\s+/).filter(Boolean)
-  if (words.length === 0) return null
-  const last = words.pop() as string
-  const head = words.join(' ')
+  if (!text.trim()) return null
   return (
-    <p className='text-center font-respira text-3xl font-normal uppercase leading-[1.15] tracking-wide text-white sm:text-4xl md:text-[44px]'>
-      {head && <span>{head} </span>}
-      <span style={{ color: KEYWORD }}>{last}</span>
+    <p className='text-center font-respira text-3xl font-normal uppercase leading-[1.24] tracking-wide text-white sm:text-[38px] md:text-[42px]'>
+      {text}
     </p>
   )
 }
@@ -68,9 +62,6 @@ function RoleTokenButton({ roleId, onEdit }: { roleId: string; onEdit?: () => vo
       className='relative transition-transform active:scale-95'
     >
       {art}
-      <span className='absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-[#8b7fb0] text-white shadow-lg'>
-        <ArrowsClockwise size={15} weight='bold' />
-      </span>
     </button>
   )
 }
@@ -78,8 +69,8 @@ function RoleTokenButton({ roleId, onEdit }: { roleId: string; onEdit?: () => vo
 /** The name pill shown for a chosen player. */
 function PlayerPill({ name, onEdit }: { name: string; onEdit?: () => void }) {
   const pill = (
-    <span className='inline-flex items-center justify-center gap-3 rounded-[10px] border border-white/20 bg-white/10 px-4 py-1.5 text-center font-respira text-3xl font-normal leading-none tracking-[0.02em] text-white shadow-[0_6px_18px_rgba(0,0,0,0.22)] sm:text-4xl md:text-[44px]'>
-      <UsersThree size={42} weight='bold' className='mt-px shrink-0 text-[#ff8585]' />
+    <span className='inline-flex items-center justify-center gap-3 rounded-[10px] border border-white/20 bg-white/10 px-4 py-1.5 text-center font-respira text-3xl font-normal leading-none tracking-[0.02em] shadow-[0_6px_18px_rgba(0,0,0,0.22)] sm:text-4xl md:text-[44px]' style={{ color: KEYWORD }}>
+      <UsersThree size={42} weight='bold' className='mt-px shrink-0' />
       <span className='leading-none'>{formatPlayerName(name)}</span>
     </span>
   )
@@ -146,7 +137,7 @@ function TokenView({
     const value = override ?? token.value
     const num = (
       <span
-        className='font-read text-7xl font-bold leading-none sm:text-8xl'
+        className='font-read text-8xl font-bold leading-none sm:text-[128px]'
         style={{ color: KEYWORD }}
       >
         {value}
@@ -164,9 +155,6 @@ function TokenView({
         className='relative inline-flex px-2 transition-transform active:scale-95'
       >
         {num}
-        <span className='absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-[#8b7fb0] text-white shadow-lg'>
-          <ArrowsClockwise size={15} weight='bold' />
-        </span>
       </button>
     )
   }
@@ -220,9 +208,9 @@ function Slide({
   overrides: Record<string, string>
   onEditToken: (key: string, kind: DeckToken['kind']) => void
 }) {
-  // Arrow between the token row and the line whenever a token is an icon
-  // (role) or a name (player) — value-only slides (a bare number) skip it.
-  const hasTokenReference = slide.tokens.some((token) => token.kind !== 'value')
+  // Arrow between the token row/value and the line, pointing back to the thing
+  // the sentence is describing.
+  const hasTokenReference = slide.tokens.length > 0
 
   return (
     <FrameCard>
@@ -288,8 +276,6 @@ export function RoleRevealConsole({ player, state, gameId, scriptRoleIds, onClos
       tokenOverrides,
     })
   }, [gameId, player.id, player.roleId, displayRoleId, tokenOverrides])
-  const role = getRole(displayRoleId) ?? getRole(player.roleId)
-  const isEvil = role ? isEvilTeam(role.team) : false
   const slides = deckForPlayer(player, state, scriptRoleIds, t)
   const pickerRoles = useMemo<RoleDefinition[]>(() => {
     return [...new Set(scriptRoleIds)]
@@ -350,40 +336,22 @@ export function RoleRevealConsole({ player, state, gameId, scriptRoleIds, onClos
         onClick={(e) => e.stopPropagation()}
       >
         <div className='absolute left-1/2 top-3 z-10 h-1.5 w-16 -translate-x-1/2 rounded-full bg-white/25 shadow-[0_1px_2px_rgba(0,0,0,0.28)]' />
-
-        <div className='flex h-full min-h-0 flex-col items-center justify-center gap-5 px-6 py-6 md:flex-row md:gap-10'>
-        {/* Left — who this seat is. */}
-        <div className='flex shrink-0 flex-col items-center gap-4 px-3'>
-          <div className='relative'>
-            <CharacterToken
-              roleId={displayRoleId}
-              team={role?.team ?? 'townsfolk'}
-              size={180}
-            />
-            <button
-              type='button'
-              onClick={(e) => {
-                e.stopPropagation()
-                setPicker({ kind: 'youare' })
-              }}
-              aria-label='Swap character token'
-              className='absolute -right-2 bottom-3 flex h-11 w-11 items-center justify-center rounded-full bg-[#8b7fb0] text-white shadow-xl transition-transform active:scale-95'
-            >
-              <ArrowsClockwise size={24} weight='bold' />
-            </button>
-          </div>
-          <p
-            className={cn(
-              'font-respira text-[28px] font-normal uppercase tracking-[0.15em]',
-              isEvil ? 'text-[#ff8585]' : 'text-board-gold',
-            )}
+        <div className='absolute left-4 top-4 z-20 flex items-center gap-2'>
+          <button
+            type='button'
+            onClick={(e) => {
+              e.stopPropagation()
+              setPicker({ kind: 'youare' })
+            }}
+            aria-label='Swap character token'
+            className='flex h-11 w-11 items-center justify-center rounded-full bg-[#8b7fb0] text-white shadow-xl transition-transform active:scale-95'
           >
-            {t.game.infoTokens.presets.youAre.message}
-          </p>
+            <ArrowsClockwise size={24} weight='bold' />
+          </button>
         </div>
 
-        {/* Right — the auto-filled info-token deck. */}
-        <div className='flex h-full min-h-0 w-full flex-1 flex-col items-center justify-center md:max-w-[66rem]'>
+        <div className='flex h-full min-h-0 items-center justify-center px-6 py-6'>
+        <div className='flex h-full min-h-0 w-full flex-col items-center justify-center md:max-w-[66rem]'>
           {slides.length === 0 ? (
             <FrameCard>
               <p className='text-center font-read text-2xl uppercase tracking-wide text-white/60'>

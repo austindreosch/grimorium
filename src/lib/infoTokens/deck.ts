@@ -53,6 +53,12 @@ export function deckForPlayer(
 
   // ── Evil: shared team info ────────────────────────────────────────────────
   if (team === 'demon') {
+    // The kill prompt leads the demon's deck — it's the action they open on.
+    if (player.roleId === 'imp') {
+      slides.push({ id: 'imp_kill', message: D.impKill, tokens: [] })
+    } else if (player.roleId === 'lleech') {
+      slides.push({ id: 'lleech_kill', message: D.lleechKill, tokens: [] })
+    }
     // The Marionette is a hidden minion — shown to the demon separately, never
     // listed among the normal minions.
     const minions = ps.filter(
@@ -194,13 +200,21 @@ export function deckForPlayer(
         { id: 'ravenkeeper', message: D.ravenkeeper, tokens: [{ kind: 'selectRole' }] },
       )
       break
+    // Death-triggered: narrator fills the two players (real Demon + a decoy).
+    case 'sage':
+      slides.push({
+        id: 'sage',
+        message: D.sageDemon,
+        tokens: [{ kind: 'selectPlayer' }, { kind: 'selectPlayer' }],
+      })
+      break
+    case 'assassin':
+      slides.push({ id: 'assassin_kill', message: D.assassinKill, tokens: [] })
+      break
     // Text-only prompts — the narrator reads them, then acts on the board
     // (Spy flips to the grimoire; the rest are night/day directions).
     case 'spy':
       slides.push({ id: 'spy_grimoire', message: D.spyGrimoire, tokens: [] })
-      break
-    case 'imp':
-      slides.push({ id: 'imp_kill', message: D.impKill, tokens: [] })
       break
     case 'poisoner':
       slides.push({ id: 'poisoner_choose', message: D.poisonerChoose, tokens: [] })

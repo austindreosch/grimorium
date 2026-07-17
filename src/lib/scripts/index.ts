@@ -73,7 +73,6 @@ export const SCRIPTS: Record<ScriptId, ScriptDefinition> = {
       'mayor',
       'saint',
       'recluse',
-      'villager',
       'scarlet_woman',
       'poisoner',
       'drunk',

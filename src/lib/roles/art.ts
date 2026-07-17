@@ -45,6 +45,42 @@ const TB_ART_BASES = new Set([
   'washerwoman',
 ])
 
+// Official watercolor role art present in /public/assets/characters (same set
+// and style as tb/, just flattened into the folder root). Keyed by art file
+// base name (role id with separators stripped, via artBase). These carry the
+// alignment tint like TB — `<base>_g.webp` / `<base>_e.webp`.
+const EDITION_ART_BASES = new Set([
+  'acrobat', 'alchemist', 'alhadikhia', 'alsaahir', 'amnesiac', 'apprentice',
+  'artist', 'assassin', 'atheist', 'balloonist', 'banshee', 'barber',
+  'barista', 'bishop', 'boffin', 'bonecollector', 'boomdandy', 'bountyhunter',
+  'butcher', 'cacklejack', 'cannibal', 'cerenovus', 'chambermaid', 'choirboy',
+  'clockmaker', 'courtier', 'cultleader', 'damsel', 'deviant', 'devilsadvocate',
+  'dreamer', 'engineer', 'eviltwin', 'exorcist', 'fanggu', 'farmer',
+  'fearmonger', 'fisherman', 'flowergirl', 'fool', 'gambler', 'gangster',
+  'general', 'gnome', 'goblin', 'godfather', 'golem', 'goon',
+  'gossip', 'grandmother', 'harlot', 'harpy', 'hatter', 'heretic',
+  'hermit', 'highpriestess', 'huntsman', 'innkeeper', 'judge', 'juggler',
+  'kazali', 'king', 'klutz', 'knight', 'legion', 'leviathan',
+  'lilmonsta', 'lleech', 'lordoftyphon', 'lunatic', 'lycanthrope', 'magician',
+  'marionette', 'mastermind', 'mathematician', 'matron', 'mezepheles', 'minstrel',
+  'moonchild', 'mutant', 'nightwatchman', 'noble', 'nodashii', 'ogre',
+  'ojo', 'oracle', 'organgrinder', 'pacifist', 'philosopher', 'pithag',
+  'pixie', 'plaguedoctor', 'po', 'politician', 'poppygrower', 'preacher',
+  'princess', 'professor', 'psychopath', 'pukka', 'puzzlemaster', 'riot',
+  'sage', 'sailor', 'savant', 'seamstress', 'shabaloth', 'shugenja',
+  'snakecharmer', 'snitch', 'steward', 'summoner', 'sweetheart', 'tealady',
+  'tinker', 'towncrier', 'vigormortis', 'villageidiot', 'vizier', 'vortox',
+  'voudon', 'widow', 'witch', 'wizard', 'wraith', 'xaan',
+  'yaggababble', 'zealot', 'zombuul',
+])
+
+// Fabled art has no alignment tint — a single `<base>.webp` in characters/.
+const FABLED_ART_BASES = new Set([
+  'angel', 'buddhist', 'deusexfiasco', 'djinn', 'doomsayer', 'duchess',
+  'ferryman', 'fibbin', 'fiddler', 'hellslibrarian', 'revolutionary', 'sentinel',
+  'spiritofivory', 'toymaker',
+])
+
 // Vite serves the app (and its public/ assets) under this base path.
 // Hardcoded absolute `/assets/...` URLs ignore it, so prefix every art URL.
 const BASE = import.meta.env.BASE_URL
@@ -72,15 +108,28 @@ export function getRoleArt(roleId: string, team: TeamId): string {
   if (TB_ART_BASES.has(base)) {
     return `${BASE}assets/characters/tb/${base}_${tint}.webp`
   }
-  // Fabled art has no alignment tint (single token); everything else is _g/_e.
+  // Fabled art has no alignment tint — a single untinted webp.
+  if (FABLED_ART_BASES.has(base)) {
+    return `${BASE}assets/characters/${base}.webp`
+  }
+  // Other editions: same tinted watercolor art as TB, flattened into root.
+  if (EDITION_ART_BASES.has(base)) {
+    return `${BASE}assets/characters/${base}_${tint}.webp`
+  }
+  // Unknown fabled with no specific art still gets the generic fabled token.
   if (team === 'fabled') return `${BASE}assets/characters/generic/fabled.webp`
   const generic = GENERIC_BY_TEAM[team] ?? 'custom'
   return `${BASE}assets/characters/generic/${generic}_${tint}.webp`
 }
 
-/** True if the role has official art (vs. a generic fallback). */
+/** True if the role has watercolor role art (vs. a generic/token fallback). */
 export function hasRoleArt(roleId: string): boolean {
-  return TB_ART_BASES.has(artBase(roleId))
+  const base = artBase(roleId)
+  return (
+    TB_ART_BASES.has(base) ||
+    EDITION_ART_BASES.has(base) ||
+    FABLED_ART_BASES.has(base)
+  )
 }
 
 /**
