@@ -13,6 +13,15 @@ const BAD_MOON_RISING_IDS = BAD_MOON_RISING.map((r) => r.id as RoleId)
 // them importable + matchable by parseScriptJson.
 const CATALOG_IDS = CATALOG_CHARACTERS.map((r) => r.id as RoleId)
 
+// Both community scripts ship with the same character pool (per their JSON).
+const IN_GOOD_COMPANY_IDS: RoleId[] = [
+  'steward', 'investigator', 'clockmaker', 'librarian', 'empath',
+  'fortune_teller', 'undertaker', 'monk', 'artist', 'slayer', 'soldier',
+  'ravenkeeper', 'mayor', 'drunk', 'recluse', 'saint', 'zealot', 'widow',
+  'marionette', 'scarlet_woman', 'baron', 'imp', 'thief', 'bureaucrat',
+  'bone_collector', 'apprentice', 'scapegoat',
+] as RoleId[]
+
 export type { ScriptId, ScriptDefinition, RoleDistribution } from './types'
 export type { GeneratorPreset, GeneratedPool } from './types'
 
@@ -93,6 +102,77 @@ export const SCRIPTS: Record<ScriptId, ScriptDefinition> = {
     id: 'bad-moon-rising',
     icon: 'cloudMoon',
     roles: BAD_MOON_RISING_IDS,
+    enforceDistribution: true,
+  },
+  // Community teensyville scripts (both share the same character pool).
+  'in-good-company': {
+    id: 'in-good-company',
+    icon: 'users',
+    roles: IN_GOOD_COMPANY_IDS,
+    enforceDistribution: true,
+  },
+  'the-devil-you-know': {
+    id: 'the-devil-you-know',
+    icon: 'flame',
+    roles: IN_GOOD_COMPANY_IDS,
+    enforceDistribution: true,
+  },
+  'no-greater-joy': {
+    id: 'no-greater-joy',
+    icon: 'handHeart',
+    roles: [
+      'clockmaker', 'investigator', 'empath', 'chambermaid', 'artist', 'sage',
+      'drunk', 'klutz', 'scarlet_woman', 'baron', 'imp',
+    ] as RoleId[],
+    enforceDistribution: true,
+  },
+  teensyville: {
+    id: 'teensyville',
+    icon: 'bookUser',
+    roles: [
+      'investigator', 'washerwoman', 'clockmaker', 'empath', 'fortune_teller',
+      'monk', 'ravenkeeper', 'mayor', 'drunk', 'recluse', 'saint', 'godfather',
+      'poisoner', 'scarlet_woman', 'imp', 'toymaker',
+    ] as RoleId[],
+    enforceDistribution: true,
+  },
+  'loose-lips': {
+    id: 'loose-lips',
+    icon: 'drama',
+    roles: [
+      'clockmaker', 'investigator', 'chef', 'empath', 'sage', 'soldier',
+      'saint', 'drunk', 'poisoner', 'godfather', 'imp',
+    ] as RoleId[],
+    enforceDistribution: true,
+  },
+  'over-the-river': {
+    id: 'over-the-river',
+    icon: 'moon',
+    roles: [
+      'grandmother', 'clockmaker', 'innkeeper', 'snake_charmer', 'professor',
+      'slayer', 'lunatic', 'recluse', 'godfather', 'spy', 'imp',
+    ] as RoleId[],
+    enforceDistribution: true,
+  },
+  'everyone-can-play': {
+    id: 'everyone-can-play',
+    icon: 'userPlus',
+    roles: [
+      'librarian', 'clockmaker', 'grandmother', 'fortune_teller', 'empath',
+      'monk', 'undertaker', 'gambler', 'artist', 'slayer', 'fool',
+      'ravenkeeper', 'mayor', 'drunk', 'recluse', 'saint', 'moonchild',
+      'baron', 'poisoner', 'assassin', 'devils_advocate', 'spy',
+      'scarlet_woman', 'imp',
+    ] as RoleId[],
+    enforceDistribution: true,
+  },
+  'race-to-the-bottom': {
+    id: 'race-to-the-bottom',
+    icon: 'skull',
+    roles: [
+      'clockmaker', 'empath', 'dreamer', 'courtier', 'slayer', 'mayor',
+      'lunatic', 'klutz', 'spy', 'scarlet_woman', 'vortox',
+    ] as RoleId[],
     enforceDistribution: true,
   },
   custom: {
