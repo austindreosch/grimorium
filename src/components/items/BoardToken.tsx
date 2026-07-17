@@ -10,6 +10,8 @@ import {
 import { PlayerState, EffectInstance, isAlive } from '../../lib/types'
 import { isUnassigned } from '../../lib/unassigned'
 import { RoleDefinition } from '../../lib/roles/types'
+import { getRole } from '../../lib/roles'
+import { getTrueRoleId } from '../../lib/effects'
 import { IconName } from '../atoms/icon'
 import { useI18n } from '../../lib/i18n'
 import { cn } from '../../lib/utils'
@@ -102,6 +104,10 @@ export function BoardToken({
   const alive = isAlive(player)
   // An unassigned seat has no character, so no reveal to open.
   const unassigned = isUnassigned(player.roleId)
+  // The board is the storyteller's ground truth: show the real role (e.g. the
+  // Drunk), not the believed one the player-facing reveal displays.
+  const boardRoleId = getTrueRoleId(player)
+  const boardRole = getRole(boardRoleId)
 
   // Disc gestures: drag = cosmetic reposition; single tap = expand (satellites);
   // double tap = open the role-reveal console. Death is an explicit satellite,
@@ -261,8 +267,8 @@ export function BoardToken({
             style={{ zIndex: 40, touchAction: 'none' }}
           >
             <CharacterToken
-              roleId={player.roleId}
-              team={role?.team ?? 'townsfolk'}
+              roleId={boardRoleId}
+              team={boardRole?.team ?? role?.team ?? 'townsfolk'}
               name={player.name}
               size={size}
               dead={!alive}
