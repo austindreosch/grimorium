@@ -17,6 +17,14 @@ const SCRIPT_ORDER: ScriptId[] = [
   'trouble-brewing',
   'sects-and-violets',
   'bad-moon-rising',
+  'in-good-company',
+  'the-devil-you-know',
+  'no-greater-joy',
+  'teensyville',
+  'loose-lips',
+  'over-the-river',
+  'everyone-can-play',
+  'race-to-the-bottom',
   'custom',
 ]
 

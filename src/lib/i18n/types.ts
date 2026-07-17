@@ -476,6 +476,14 @@ export type Translations = {
     'trouble-brewing': string
     'sects-and-violets': string
     'bad-moon-rising': string
+    'in-good-company': string
+    'the-devil-you-know': string
+    'no-greater-joy': string
+    teensyville: string
+    'loose-lips': string
+    'over-the-river': string
+    'everyone-can-play': string
+    'race-to-the-bottom': string
     custom: string
     selectScript: string
     selectScriptSubtitle: string
