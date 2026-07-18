@@ -1,6 +1,11 @@
 import { useState } from 'react'
 import { useI18n, interpolate } from '../../lib/i18n'
-import { SCRIPTS, ScriptId, setImportedScript, setImportedCustoms } from '../../lib/scripts'
+import {
+  SCRIPTS,
+  ScriptId,
+  setImportedScript,
+  setImportedCustoms,
+} from '../../lib/scripts'
 import { registerCustomCharacters } from '../../lib/roles'
 import { parseScriptJson, ScriptImportResult } from '../../lib/scripts/import'
 import { getRoleName } from '../../lib/i18n'
@@ -18,6 +23,7 @@ const SCRIPT_ORDER: ScriptId[] = [
   'sects-and-violets',
   'bad-moon-rising',
   'in-good-company',
+  'cheating-death',
   'the-devil-you-know',
   'no-greater-joy',
   'teensyville',
@@ -80,7 +86,7 @@ export function ScriptSelection({ players, onSelect, onBack }: Props) {
     <div className='min-h-app bg-gradient-to-b from-grimoire-purple via-grimoire-dark to-grimoire-darker flex flex-col'>
       {/* Header */}
       <div className='sticky top-0 z-10 bg-grimoire-dark/95 backdrop-blur-sm border-b border-mystic-gold/20 px-4 py-3'>
-        <div className='flex items-center gap-3 max-w-3xl mx-auto'>
+        <div className='flex items-center gap-3 max-w-[1200px] mx-auto'>
           <BackButton onClick={onBack} />
           <div className='flex-1'>
             <h1 className='font-tarot text-lg text-parchment-100 tracking-wider uppercase'>
@@ -90,21 +96,17 @@ export function ScriptSelection({ players, onSelect, onBack }: Props) {
               {t.scripts.selectScriptSubtitle}
             </p>
           </div>
-        </div>
-      </div>
-
-      {/* Player count badge */}
-      <div className='px-4 py-3 bg-white/5 border-b border-white/10'>
-        <div className='max-w-3xl mx-auto flex items-center gap-2'>
-          <Icon name='users' size='sm' className='text-mystic-gold/70' />
-          <span className='text-sm text-parchment-300'>
-            {players.length} {t.common.players.toLowerCase()}
-          </span>
+          <div className='ml-auto flex items-center gap-2'>
+            <Icon name='users' size='sm' className='text-mystic-gold/70' />
+            <span className='text-sm text-parchment-300'>
+              {players.length} {t.common.players.toLowerCase()}
+            </span>
+          </div>
         </div>
       </div>
 
       {/* Script cards */}
-      <div className='flex-1 px-4 py-6 max-w-3xl mx-auto w-full'>
+      <div className='flex-1 px-4 py-6 max-w-[1200px] mx-auto w-full'>
         <div className='grid gap-4 sm:grid-cols-2'>
           {SCRIPT_ORDER.map((scriptId) => {
             const script = SCRIPTS[scriptId]
@@ -226,7 +228,11 @@ export function ScriptSelection({ players, onSelect, onBack }: Props) {
               />
               <div className='mt-2 flex items-center justify-between gap-2'>
                 <label className='inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-board-ink/20 bg-parchment-50 px-3 py-1.5 text-xs font-medium text-board-ink/80 transition-colors hover:bg-parchment-200'>
-                  <Icon name='bookMarked' size='xs' className='text-board-gold/70' />
+                  <Icon
+                    name='bookMarked'
+                    size='xs'
+                    className='text-board-gold/70'
+                  />
                   {t.scripts.importChooseFile}
                   <input
                     type='file'
@@ -275,7 +281,11 @@ export function ScriptSelection({ players, onSelect, onBack }: Props) {
                     </p>
                   ) : (
                     <div className='mt-3'>
-                      <Button variant='dawn' size='sm' onClick={handleUseImport}>
+                      <Button
+                        variant='dawn'
+                        size='sm'
+                        onClick={handleUseImport}
+                      >
                         {t.scripts.importUse}
                       </Button>
                       <p className='mt-2 text-xs text-board-ink/50'>

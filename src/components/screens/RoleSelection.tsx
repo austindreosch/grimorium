@@ -77,15 +77,12 @@ export function RoleSelection({ players, scriptId, onNext, onBack }: Props) {
   const recommended = useMemo(() => {
     const base = getRecommendedDistribution(players.length)
     if (!base) return null
-    const modifiers = Object.entries(roleCounts).flatMap(
-      ([roleId, count]) => {
-        const role = ROLES[roleId as keyof typeof ROLES]
-        return Array(count).fill(role?.distributionModifier) as (
-          | Partial<Record<PlayTeamId, number>>
-          | undefined
-        )[]
-      },
-    )
+    const modifiers = Object.entries(roleCounts).flatMap(([roleId, count]) => {
+      const role = ROLES[roleId as keyof typeof ROLES]
+      return Array(count).fill(role?.distributionModifier) as (
+        Partial<Record<PlayTeamId, number>> | undefined
+      )[]
+    })
     return applyDistributionModifiers(base, modifiers)
   }, [players.length, roleCounts])
 
@@ -163,8 +160,9 @@ export function RoleSelection({ players, scriptId, onNext, onBack }: Props) {
   }
 
   const generateBalancedPool = useCallback(() => {
-    const pools = generateRolePools(script, players.length, 40)
-      .sort((a, b) => a.totalChaos - b.totalChaos)
+    const pools = generateRolePools(script, players.length, 40).sort(
+      (a, b) => a.totalChaos - b.totalChaos,
+    )
     if (pools.length === 0) return
 
     const currentKey = Object.entries(roleCounts)
@@ -174,9 +172,12 @@ export function RoleSelection({ players, scriptId, onNext, onBack }: Props) {
     const start = Math.floor(pools.length * 0.25)
     const end = Math.ceil(pools.length * 0.75)
     const balanced = pools.slice(start, end)
-    const choices = (balanced.length ? balanced : pools)
-      .filter((pool) => [...pool.roles].sort().join(',') !== currentKey)
-    const pool = (choices.length ? choices : pools)[Math.floor(Math.random() * (choices.length || pools.length))]
+    const choices = (balanced.length ? balanced : pools).filter(
+      (pool) => [...pool.roles].sort().join(',') !== currentKey,
+    )
+    const pool = (choices.length ? choices : pools)[
+      Math.floor(Math.random() * (choices.length || pools.length))
+    ]
     applyGeneratedRoles(pool.roles)
   }, [script, players.length, roleCounts])
 
@@ -198,62 +199,77 @@ export function RoleSelection({ players, scriptId, onNext, onBack }: Props) {
     <div className='min-h-app bg-gradient-to-b from-grimoire-purple via-grimoire-dark to-grimoire-darker flex flex-col'>
       {/* Top bar — BACK · GENERATE · team counts · NEXT */}
       <div className='sticky top-0 z-10 bg-grimoire-dark/95 backdrop-blur-sm border-b border-mystic-gold/20'>
-        <div className='mx-auto max-w-[1200px]'>
-          <div className='flex items-center gap-3 py-2.5'>
+        <div className='mx-auto max-w-[1200px] px-3'>
+          <div className='relative flex items-center gap-3 py-2.5'>
+            {/* Left — back + script name */}
             <BackButton onClick={onBack} />
-            <button
-              type='button'
-              onClick={generateBalancedPool}
-              className='flex items-center justify-center gap-1.5 rounded-lg border border-mystic-gold/30 bg-mystic-gold/15 px-3 py-1.5 text-xs font-medium uppercase tracking-wide text-mystic-gold shadow-sm transition-transform active:scale-95'
-            >
-              <Icon name='dices' size='sm' />
-              {t.scripts.generate}
-            </button>
+            <span className='font-token text-sm uppercase tracking-wide text-mystic-gold/90 truncate'>
+              {scriptId}
+            </span>
 
-            {/* Team completion counts */}
-            {recommended && totalRoles > 0 && (
-              <div className='ml-auto flex items-center gap-3'>
-                {TEAM_ORDER.map((teamId) => {
-                  const team = getTeam(teamId)
-                  const target = recommended[teamId]
-                  const current = teamCounts[teamId]
-                  const isMatch = current === target
-                  const isOver = current > target
-                  const TeamIcon = TEAM_PHOSPHOR[teamId]
-                  const stateColor = isMatch
-                    ? 'text-green-400'
-                    : isOver
-                      ? 'text-amber-400'
-                      : current > 0
-                        ? team.colors.text
-                        : 'text-parchment-500'
-                  return (
-                    <div key={teamId} className='flex items-center gap-1.5'>
-                      <TeamIcon
-                        size={18}
-                        weight='fill'
-                        className={cn('transition-colors', stateColor)}
-                      />
-                      <span
-                        className={cn(
-                          'text-[11px] tabular-nums font-medium',
-                          stateColor,
-                        )}
-                      >
-                        {current}/{target}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
+            {/* Center — generate + team completion counts */}
+            <div className='absolute left-1/2 -translate-x-1/2 flex items-center gap-3'>
+              <button
+                type='button'
+                onClick={generateBalancedPool}
+                className='flex items-center justify-center gap-1.5 rounded-lg border border-mystic-gold/30 bg-mystic-gold/15 px-3 py-1.5 text-xs font-medium uppercase tracking-wide text-mystic-gold shadow-sm transition-transform active:scale-95'
+              >
+                <Icon name='dices' size='sm' />
+                {t.scripts.generate}
+              </button>
+
+              {recommended && totalRoles > 0 && (
+                <div className='flex items-center gap-3'>
+                  {TEAM_ORDER.map((teamId) => {
+                    const team = getTeam(teamId)
+                    const target = recommended[teamId]
+                    const current = teamCounts[teamId]
+                    // Baron etc. can target more outsiders than the script has.
+                    // The target still shows (e.g. 2/3), but you're "complete"
+                    // once every available role of that team is picked — you
+                    // physically can't reach the target, so max = green.
+                    const attainable = Math.min(
+                      target,
+                      rolesByTeam[teamId].length,
+                    )
+                    const isMatch = current >= attainable && current <= target
+                    const isOver = current > target
+                    const TeamIcon = TEAM_PHOSPHOR[teamId]
+                    const stateColor = isMatch
+                      ? 'text-green-400'
+                      : isOver
+                        ? 'text-amber-400'
+                        : current > 0
+                          ? team.colors.text
+                          : 'text-parchment-500'
+                    return (
+                      <div key={teamId} className='flex items-center gap-1.5'>
+                        <TeamIcon
+                          size={18}
+                          weight='fill'
+                          className={cn('transition-colors', stateColor)}
+                        />
+                        <span
+                          className={cn(
+                            'text-[11px] tabular-nums font-medium',
+                            stateColor,
+                          )}
+                        >
+                          {current}/{target}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
 
             <Button
               onClick={handleNext}
               disabled={!canProceed}
               size='default'
               variant='gold'
-              className={cn(!recommended || totalRoles === 0 ? 'ml-auto' : '')}
+              className='ml-auto'
             >
               {t.newGame.nextAssignRoles}
               <span className='ml-2 opacity-70 font-sans text-sm normal-case'>
@@ -353,7 +369,13 @@ function TeamSection({
   const team = getTeam(teamId)
 
   return (
-    <div className={cn('px-4 py-3', divider && 'border-t border-white/10', TEAM_SECTION_TINT[teamId])}>
+    <div
+      className={cn(
+        'px-4 py-3',
+        divider && 'border-t border-white/10',
+        TEAM_SECTION_TINT[teamId],
+      )}
+    >
       <div className='mx-auto max-w-[1200px]'>
         {/* Role Grid */}
         <div className='grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6'>
@@ -421,11 +443,7 @@ function RoleCard({
                 team.colors.badge,
               )}
             >
-              <Icon
-                name='check'
-                size='xs'
-                className={team.colors.badgeText}
-              />
+              <Icon name='check' size='xs' className={team.colors.badgeText} />
             </div>
           </div>
         )}

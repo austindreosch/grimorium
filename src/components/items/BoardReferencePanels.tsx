@@ -11,6 +11,7 @@ import { RoleDefinition } from '../../lib/roles/types'
 import { getScript, ScriptId } from '../../lib/scripts'
 import { TeamId } from '../../lib/teams'
 import { getNightOrder } from '../../lib/nightOrder'
+import { getNightReminder } from '../../lib/roles/nightReminders'
 import { getRoleName, getRoleAbility, getRoleLines } from '../../lib/i18n/registry'
 import { useI18n } from '../../lib/i18n'
 import { getRoleArt, hasRoleArt, getTokenArt, BLANK_TOKEN } from '../../lib/roles/art'
@@ -286,8 +287,18 @@ export function ScriptSheetPanel({
 
 // ─── Night order ─────────────────────────────────────────────────────────────
 
-/** Night-specific reminder text when the role has one, else its ability. */
-function nightText(roleId: string, language: 'en' | 'es'): string {
+/**
+ * Storyteller night direction for a role. Prefers the official night-sheet
+ * reminder for this night (first vs other), then a translated NIGHT line, then
+ * falls back to the ability text.
+ */
+function nightText(
+  roleId: string,
+  language: 'en' | 'es',
+  which: 'first' | 'other',
+): string {
+  const official = getNightReminder(roleId, which)
+  if (official) return official
   const night = getRoleLines(roleId, language).find((l) => l.type === 'NIGHT')
   return night?.text ?? getRoleAbility(roleId, language)
 }
@@ -380,7 +391,7 @@ export function NightOrderPanel({
               roleId={e.roleId}
               team={team}
               name={getRoleName(e.roleId, language)}
-              ability={nightText(e.roleId, language)}
+              ability={nightText(e.roleId, language, which)}
             />
           )
         })}

@@ -2,7 +2,6 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useDrag } from '@use-gesture/react'
 import { useI18n } from '../../lib/i18n'
 import { Button, Icon, BackButton } from '../atoms'
-import { ScreenFooter } from '../layouts/ScreenFooter'
 import {
   getLastGamePlayers,
   getRoster,
@@ -233,7 +232,7 @@ export function PlayerEntry({ onNext, onBack, onSwitchToGuided }: Props) {
     <div className='min-h-app bg-gradient-to-b from-grimoire-purple via-grimoire-dark to-grimoire-darker flex flex-col'>
       {/* Header */}
       <div className='sticky top-0 z-10 bg-grimoire-dark/95 backdrop-blur-sm border-b border-mystic-gold/20 px-4 py-3'>
-        <div className='flex items-center gap-3 max-w-3xl mx-auto'>
+        <div className='flex items-center gap-3 max-w-[1200px] mx-auto'>
           <BackButton onClick={onBack} />
           <div>
             <h1 className='font-tarot text-lg text-parchment-100 tracking-wider uppercase'>
@@ -252,144 +251,149 @@ export function PlayerEntry({ onNext, onBack, onSwitchToGuided }: Props) {
               {t.newGame.guidedModeLink}
             </button>
           )}
+          <Button
+            onClick={handleNext}
+            disabled={!canProceed}
+            size='default'
+            variant='gold'
+            className={onSwitchToGuided ? '' : 'ml-auto'}
+          >
+            {t.newGame.nextSelectRoles}
+            <Icon name='arrowRight' size='sm' className='ml-2' />
+          </Button>
         </div>
       </div>
 
       {/* Content */}
-      <div className='flex-1 px-4 py-6 max-w-3xl mx-auto w-full'>
-        {/* Player Count & Loaded indicator */}
-        <div className='flex items-center justify-between mb-4'>
-          <div className='flex items-center gap-2 text-parchment-400'>
-            <Icon name='users' size='sm' />
-            <span className='text-sm tracking-wider'>
-              {t.common.players} ({validCount})
-            </span>
-          </div>
-          {loadedFromLast && (
-            <span className='text-xs text-mystic-gold/60 flex items-center gap-1'>
-              <Icon name='history' size='xs' />
-              {t.newGame.loadedFromLastGame}
-            </span>
-          )}
-        </div>
-
-        {/* Player List */}
-        <div className='space-y-3 mb-6'>
-          {players.map((player, index) => (
-            <div
-              key={player.id}
-              ref={(el) => {
-                rowElsRef.current[index] = el
-              }}
-              className={`flex gap-2 items-center rounded-lg ${
-                drag?.index === index
-                  ? 'bg-white/5 ring-1 ring-mystic-gold/30'
-                  : ''
-              }`}
-              style={getItemStyle(index)}
-            >
-              {/* Drag handle */}
-              <div
-                {...bindDrag(index)}
-                className='flex items-center justify-center w-11 min-h-[44px] shrink-0 py-3 text-parchment-500/40 hover:text-parchment-400 cursor-grab active:cursor-grabbing touch-none select-none'
-              >
-                <Icon name='gripVertical' size='md' />
+      <div className='flex-1 px-4 py-6 max-w-[1200px] mx-auto w-full'>
+        <div className='grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]'>
+          <div>
+            {/* Player Count & Loaded indicator */}
+            <div className='flex items-center justify-between mb-4'>
+              <div className='flex items-center gap-2 text-parchment-400'>
+                <Icon name='users' size='sm' />
+                <span className='text-sm tracking-wider'>
+                  {t.common.players} ({validCount})
+                </span>
               </div>
-
-              <input
-                ref={index === players.length - 1 ? lastInputRef : undefined}
-                type='text'
-                value={player.name}
-                onChange={(e) => updatePlayer(index, e.target.value)}
-                placeholder={`${t.newGame.playerPlaceholder} ${index + 1}`}
-                className='flex-1 bg-white/5 border border-parchment-500/30 text-parchment-100 placeholder-parchment-500 rounded-lg px-4 py-3 focus:outline-none focus:border-mystic-gold/50 focus:ring-1 focus:ring-mystic-gold/30 transition-colors'
-              />
-              {players.length > MIN_PLAYERS && (
-                <button
-                  onClick={() => removePlayer(index)}
-                  className='p-3 text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors'
-                >
-                  <Icon name='trash' size='md' />
-                </button>
+              {loadedFromLast && (
+                <span className='text-xs text-mystic-gold/60 flex items-center gap-1'>
+                  <Icon name='history' size='xs' />
+                  {t.newGame.loadedFromLastGame}
+                </span>
               )}
             </div>
-          ))}
-        </div>
 
-        {/* Add Player Button */}
-        {!maxPlayersReached && (
-          <button
-            onClick={addPlayer}
-            className='w-full py-3 border border-dashed border-parchment-500/30 text-parchment-400 rounded-lg hover:border-parchment-400/50 hover:text-parchment-300 transition-colors flex items-center justify-center gap-2'
-          >
-            <Icon name='plus' size='md' />
-            {t.newGame.addPlayer}
-          </button>
-        )}
+            {/* Player List */}
+            <div className='space-y-3 mb-6'>
+              {players.map((player, index) => (
+                <div
+                  key={player.id}
+                  ref={(el) => {
+                    rowElsRef.current[index] = el
+                  }}
+                  className={`flex gap-2 items-center rounded-lg ${
+                    drag?.index === index
+                      ? 'bg-white/5 ring-1 ring-mystic-gold/30'
+                      : ''
+                  }`}
+                  style={getItemStyle(index)}
+                >
+                  {/* Drag handle */}
+                  <div
+                    {...bindDrag(index)}
+                    className='flex items-center justify-center w-11 min-h-[44px] shrink-0 py-3 text-parchment-500/40 hover:text-parchment-400 cursor-grab active:cursor-grabbing touch-none select-none'
+                  >
+                    <Icon name='gripVertical' size='md' />
+                  </div>
 
-        {/* Saved people — tap a circle to add */}
-        {availableRoster.length > 0 && (
-          <div className='mt-8'>
-            <div className='flex items-center gap-2 mb-3 text-parchment-400'>
-              <Icon name='users' size='xs' />
-              <span className='text-xs tracking-wider uppercase'>
-                {t.newGame.savedPeople}
-              </span>
-            </div>
-            <div className='grid grid-cols-4 gap-x-2 gap-y-4 sm:grid-cols-6 md:grid-cols-8'>
-              {availableRoster.map((name) => (
-                <div key={name} className='relative flex flex-col items-center'>
-                  <button
-                    onClick={() => addFromRoster(name)}
-                    disabled={maxPlayersReached}
-                    className='group flex flex-col items-center gap-1.5 w-full disabled:opacity-40'
-                  >
-                    <span className='flex items-center justify-center w-14 h-14 rounded-full bg-white/5 border border-parchment-500/30 text-parchment-100 font-tarot text-lg tracking-wide group-hover:border-mystic-gold/60 group-hover:bg-mystic-gold/10 group-active:scale-95 transition-all'>
-                      {initials(name)}
-                    </span>
-                    <span className='text-xs text-parchment-300 text-center leading-tight w-full truncate px-0.5'>
-                      {name}
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => deleteFromRoster(name)}
-                    aria-label={`Remove ${name}`}
-                    className='absolute -top-1 -right-0.5 flex items-center justify-center w-5 h-5 rounded-full bg-grimoire-darker border border-parchment-500/30 text-parchment-500/60 hover:text-red-400 hover:border-red-400/50 transition-colors'
-                  >
-                    <Icon name='x' size='xs' />
-                  </button>
+                  <input
+                    ref={
+                      index === players.length - 1 ? lastInputRef : undefined
+                    }
+                    type='text'
+                    value={player.name}
+                    onChange={(e) => updatePlayer(index, e.target.value)}
+                    placeholder={`${t.newGame.playerPlaceholder} ${index + 1}`}
+                    className='flex-1 bg-white/5 border border-parchment-500/30 text-parchment-100 placeholder-parchment-500 rounded-lg px-4 py-3 focus:outline-none focus:border-mystic-gold/50 focus:ring-1 focus:ring-mystic-gold/30 transition-colors'
+                  />
+                  {players.length > MIN_PLAYERS && (
+                    <button
+                      onClick={() => removePlayer(index)}
+                      className='p-3 text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors'
+                    >
+                      <Icon name='trash' size='md' />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
+
+            {/* Add Player Button */}
+            {!maxPlayersReached && (
+              <button
+                onClick={addPlayer}
+                className='w-full py-3 border border-dashed border-parchment-500/30 text-parchment-400 rounded-lg hover:border-parchment-400/50 hover:text-parchment-300 transition-colors flex items-center justify-center gap-2'
+              >
+                <Icon name='plus' size='md' />
+                {t.newGame.addPlayer}
+              </button>
+            )}
+
+            {!canProceed && (
+              <p className='text-center text-mystic-gold/60 text-sm mt-4'>
+                {t.newGame.minPlayersWarning}
+              </p>
+            )}
+
+            {!!maxPlayersReached && (
+              <p className='text-center text-mystic-gold/60 text-sm mt-4'>
+                {t.newGame.maxPlayersWarning}
+              </p>
+            )}
           </div>
-        )}
 
-        {!canProceed && (
-          <p className='text-center text-mystic-gold/60 text-sm mt-4'>
-            {t.newGame.minPlayersWarning}
-          </p>
-        )}
-
-        {!!maxPlayersReached && (
-          <p className='text-center text-mystic-gold/60 text-sm mt-4'>
-            {t.newGame.maxPlayersWarning}
-          </p>
-        )}
+          {/* Saved people — tap a circle to add */}
+          {availableRoster.length > 0 && (
+            <div>
+              <div className='flex items-center gap-2 mb-3 text-parchment-400'>
+                <Icon name='users' size='xs' />
+                <span className='text-xs tracking-wider uppercase'>
+                  {t.newGame.savedPeople}
+                </span>
+              </div>
+              <div className='grid grid-cols-4 gap-x-2 gap-y-4 sm:grid-cols-6 lg:grid-cols-4'>
+                {availableRoster.map((name) => (
+                  <div
+                    key={name}
+                    className='relative flex flex-col items-center'
+                  >
+                    <button
+                      onClick={() => addFromRoster(name)}
+                      disabled={maxPlayersReached}
+                      className='group flex flex-col items-center gap-1.5 w-full disabled:opacity-40'
+                    >
+                      <span className='flex items-center justify-center w-14 h-14 rounded-full bg-white/5 border border-parchment-500/30 text-parchment-100 font-tarot text-lg tracking-wide group-hover:border-mystic-gold/60 group-hover:bg-mystic-gold/10 group-active:scale-95 transition-all'>
+                        {initials(name)}
+                      </span>
+                      <span className='text-xs text-parchment-300 text-center leading-tight w-full truncate px-0.5'>
+                        {name}
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => deleteFromRoster(name)}
+                      aria-label={`Remove ${name}`}
+                      className='absolute -top-1 -right-0.5 flex items-center justify-center w-5 h-5 rounded-full bg-grimoire-darker border border-parchment-500/30 text-parchment-500/60 hover:text-red-400 hover:border-red-400/50 transition-colors'
+                    >
+                      <Icon name='x' size='xs' />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-
-      {/* Footer */}
-      <ScreenFooter maxWidth='max-w-3xl'>
-        <Button
-          onClick={handleNext}
-          disabled={!canProceed}
-          fullWidth
-          size='lg'
-          variant='gold'
-        >
-          {t.newGame.nextSelectRoles}
-          <Icon name='arrowRight' size='md' className='ml-2' />
-        </Button>
-      </ScreenFooter>
     </div>
   )
 }

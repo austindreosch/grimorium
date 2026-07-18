@@ -6,6 +6,7 @@ export type ScriptId =
   | 'sects-and-violets'
   | 'bad-moon-rising'
   | 'in-good-company'
+  | 'cheating-death'
   | 'the-devil-you-know'
   | 'no-greater-joy'
   | 'teensyville'

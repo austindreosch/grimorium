@@ -476,6 +476,7 @@ const en: Translations = {
     'sects-and-violets': 'Sects & Violets',
     'bad-moon-rising': 'Bad Moon Rising',
     'in-good-company': 'In Good Company',
+    'cheating-death': 'Cheating Death',
     'the-devil-you-know': 'The Devil You Know',
     'no-greater-joy': 'No Greater Joy',
     teensyville: 'Teensyville',

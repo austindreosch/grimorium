@@ -477,6 +477,7 @@ export type Translations = {
     'sects-and-violets': string
     'bad-moon-rising': string
     'in-good-company': string
+    'cheating-death': string
     'the-devil-you-know': string
     'no-greater-joy': string
     teensyville: string
