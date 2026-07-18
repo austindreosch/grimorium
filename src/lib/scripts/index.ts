@@ -117,6 +117,17 @@ export const SCRIPTS: Record<ScriptId, ScriptDefinition> = {
     roles: IN_GOOD_COMPANY_IDS,
     enforceDistribution: true,
   },
+  'cheating-death': {
+    id: 'cheating-death',
+    icon: 'skull',
+    roles: [
+      'knight', 'washerwoman', 'clockmaker', 'grandmother', 'empath',
+      'fortune_teller', 'undertaker', 'monk', 'artist', 'slayer', 'soldier',
+      'sage', 'tea_lady', 'drunk', 'recluse', 'saint', 'zealot', 'assassin',
+      'widow', 'scarlet_woman', 'baron', 'imp', 'lleech',
+    ] as RoleId[],
+    enforceDistribution: true,
+  },
   'no-greater-joy': {
     id: 'no-greater-joy',
     icon: 'handHeart',

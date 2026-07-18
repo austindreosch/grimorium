@@ -15,10 +15,10 @@ import {
 } from '../../lib/reminders/catalog'
 import { getEffectName } from '../../lib/i18n/registry'
 import { useI18n, interpolate } from '../../lib/i18n'
-import { filterVisibleEffects } from '../items/PlayerRoleIcon'
 import { BoardToken, PipView } from '../items/BoardToken'
 import { CharacterToken } from '../items/CharacterToken'
 import { ReminderToken } from '../items/ReminderToken'
+import { filterVisibleEffects } from '../items/PlayerRoleIcon'
 import { RolePickerGrid } from '../inputs/RolePickerGrid'
 import { ScriptSheetPanel, NightOrderPanel } from '../items/BoardReferencePanels'
 import { InfoTokenCard } from './InfoTokenCard'
@@ -315,7 +315,7 @@ export function GrimoireBoard({
     const baseSize = clamp(Math.round(chord * 0.82), 44, maxSize)
     const scale = 1 + clamp((MAX_PLAYERS - n) / (MAX_PLAYERS - 1), 0, 1) * 0.35
     const size = Math.round(baseSize * scale)
-    const reminderScale = 0.78 * clamp(min / 900, 0.72, 1)
+    const reminderScale = 0.66 * clamp(min / 900, 0.72, 1)
     return players.map((p, i) => {
       const angle = -Math.PI / 2 + (i / n) * Math.PI * 2
       const base = {
@@ -437,15 +437,17 @@ export function GrimoireBoard({
   const placeToken = (def: ReminderDef) => {
     const playerId = libraryFor
     if (!playerId) return
-    if (def.effectType) onAddEffect(playerId, def.effectType)
-    else
-      onAddEffect(playerId, 'reminder', {
-        label: def.label,
-        icon: def.icon,
-        iconSrc: getReminderIconSrc(def),
-        tokenSrc: def.tokenSrc,
-        tone: def.tone,
-      })
+    // Tray tokens are purely cosmetic — placing one never applies a game
+    // mechanic. Real effects (safe, poisoned, red_herring, drunk) come only from
+    // the roles' own night actions. def.effectType is kept solely so pip display
+    // can resolve official token art for those role-applied effects.
+    onAddEffect(playerId, 'reminder', {
+      label: def.label,
+      icon: def.icon,
+      iconSrc: getReminderIconSrc(def),
+      tokenSrc: def.tokenSrc,
+      tone: def.tone,
+    })
     setLibraryFor(null)
   }
 
@@ -1024,6 +1026,7 @@ export function GrimoireBoard({
               state={state}
               gameId={game.id}
               scriptRoleIds={getScriptRoleIds(game)}
+              onSetPlayerRole={onSetPlayerRole}
               onClose={() => setRevealFor(null)}
             />
           ) : null

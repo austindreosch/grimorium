@@ -107,8 +107,16 @@ function tryGenerateValidPool(
     modifiers,
   )
 
-  // Step 4: Pick outsiders with adjusted count
-  const outsiders = pickRandom(rolesByTeam.outsider, adjustedDistribution.outsider)
+  // Step 4: Pick outsiders with adjusted count, capped at how many the script
+  // actually has. Modifiers like Baron (+2 outsiders) are a target, not a
+  // guarantee: if the script only has 2 outsiders, Baron just means "the max,"
+  // and the freed slots fall back to townsfolk. Without this cap, Baron could
+  // never be generated on outsider-light scripts (e.g. No Greater Joy).
+  const outsiderCount = Math.min(
+    adjustedDistribution.outsider,
+    rolesByTeam.outsider.length,
+  )
+  const outsiders = pickRandom(rolesByTeam.outsider, outsiderCount)
   if (!outsiders) return null
 
   // Step 5: Fill townsfolk to reach player count

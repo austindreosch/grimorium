@@ -20,6 +20,8 @@ type Props = {
   gameId: string
   /** Full script role list — drives the demon's not-in-play bluffs. */
   scriptRoleIds: string[]
+  /** Swap the seat's real role — the YOU ARE swap writes straight to the board. */
+  onSetPlayerRole: (playerId: string, roleId: string) => void
   onClose: () => void
 }
 
@@ -242,7 +244,7 @@ function Slide({
   )
 }
 
-export function RoleRevealConsole({ player, state, gameId, scriptRoleIds, onClose }: Props) {
+export function RoleRevealConsole({ player, state, gameId, scriptRoleIds, onSetPlayerRole, onClose }: Props) {
   const { t } = useI18n()
   // Restore the storyteller's prior choices for this seat, so reopening shows
   // what was last displayed. Persisted per game+player, never to game.history.
@@ -250,7 +252,6 @@ export function RoleRevealConsole({ player, state, gameId, scriptRoleIds, onClos
     () => getRevealState(gameId, player.id),
     [gameId, player.id],
   )
-  const [displayRoleId, setDisplayRoleId] = useState(saved?.displayRoleId ?? player.roleId)
   // Which picker is open, keyed to a deck slot `${slideId}:${index}`:
   //  - youare  → swap the left "YOU ARE" character
   //  - role    → fill/swap a character slot (bluffs, selectRole)
@@ -269,13 +270,12 @@ export function RoleRevealConsole({ player, state, gameId, scriptRoleIds, onClos
     saved?.tokenOverrides ?? {},
   )
 
-  // Persist choices whenever they change so they survive close/reopen + reload.
+  // Persist deck fills whenever they change so they survive close/reopen + reload.
   useEffect(() => {
-    setRevealState(gameId, player.id, {
-      displayRoleId: displayRoleId === player.roleId ? undefined : displayRoleId,
-      tokenOverrides,
-    })
-  }, [gameId, player.id, player.roleId, displayRoleId, tokenOverrides])
+    setRevealState(gameId, player.id, { tokenOverrides })
+  }, [gameId, player.id, tokenOverrides])
+  // The YOU ARE role is the board's real role — swapping it writes to the board,
+  // so the deck (and vice versa: board changes) always reflects player.roleId.
   const slides = deckForPlayer(player, state, scriptRoleIds, t)
   const pickerRoles = useMemo<RoleDefinition[]>(() => {
     return [...new Set(scriptRoleIds)]
@@ -501,13 +501,13 @@ export function RoleRevealConsole({ player, state, gameId, scriptRoleIds, onClos
                     state={state}
                     selected={
                       picker.kind === 'youare'
-                        ? [displayRoleId]
+                        ? [player.roleId]
                         : tokenOverrides[picker.key]
                           ? [tokenOverrides[picker.key]]
                           : []
                     }
                     onSelect={(roleId) => {
-                      if (picker.kind === 'youare') setDisplayRoleId(roleId)
+                      if (picker.kind === 'youare') onSetPlayerRole(player.id, roleId)
                       else setTokenOverrides((prev) => ({ ...prev, [picker.key]: roleId }))
                       setPicker(null)
                     }}
