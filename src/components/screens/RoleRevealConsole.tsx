@@ -444,7 +444,7 @@ export function RoleRevealConsole({ player, state, gameId, scriptRoleIds, onSetP
               <div className='min-h-0 flex-1 overflow-y-auto rounded-xl bg-board-ink/10 p-3'>
                 {picker.kind === 'number' ? (
                   <div className='grid grid-cols-3 gap-2 sm:grid-cols-5'>
-                    {Array.from({ length: 9 }, (_, i) => String(i + 1)).map((n) => {
+                    {Array.from({ length: 10 }, (_, i) => String(i)).map((n) => {
                       const key = picker.key
                       const selected = tokenOverrides[key] === n
                       return (
